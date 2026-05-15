@@ -1,4 +1,4 @@
-# NutriCAre Community
+# NutriCare Community
 The Community Service Project (CSP) on “Nutrition Awareness” was conducted with the objective of educating people about the importance of a balanced diet, healthy eating habits, and prevention of nutrition-related diseases. In today’s fast-paced lifestyle, many individuals neglect proper nutrition due to lack of awareness, financial constraints, and dependence on processed foods. This project aims to bridge that gap by promoting practical and affordable nutritional practices.
 
 Project Title: NutriCare Community
