@@ -1,0 +1,137 @@
+import React, { useState } from "react";
+import { useApp } from "../context/AppContext";
+import { db } from "../lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
+import { translations } from "../constants/translations";
+import { Check, ArrowRight, Baby, User, Users, Heart, Baby as Pregnancy } from "lucide-react";
+
+export default function Onboarding() {
+  const { user, language, setLanguage, refreshProfile } = useApp();
+  const [step, setStep] = useState(1);
+  const [ageGroup, setAgeGroup] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const t = translations[language] || translations.en;
+
+  const ageGroups = [
+    { id: "child", icon: <Baby />, label: "Child (5-12)" },
+    { id: "teen", icon: <User />, label: "Teenager (13-19)" },
+    { id: "adult", icon: <Users />, label: "Adult (20-60)" },
+    { id: "elderly", icon: <Heart />, label: "Elderly (60+)" },
+    { id: "pregnant", icon: <Pregnancy />, label: "Pregnant Woman" },
+  ];
+
+  const handleFinish = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        language,
+        ageGroup,
+        onboarded: true,
+        role: "user",
+        createdAt: serverTimestamp(),
+      });
+      await refreshProfile();
+    } catch (err) {
+      console.error("Onboarding failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAF9] flex items-center justify-center p-6">
+      <motion.div 
+        layout
+        className="bg-white rounded-[40px] shadow-2xl shadow-green-100/50 w-full max-w-md overflow-hidden border border-gray-100"
+      >
+        <div className="h-2 bg-gray-100 relative">
+            <motion.div 
+                animate={{ width: `${(step / 2) * 100}%` }}
+                className="absolute top-0 left-0 h-full gradient-green" 
+            />
+        </div>
+
+        <div className="p-10">
+            <AnimatePresence mode="wait">
+                {step === 1 ? (
+                    <motion.div
+                        key="step1"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                    >
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">{t.onboarding.selectLanguage}</h2>
+                        <p className="text-gray-400 font-bold text-sm mb-10 uppercase tracking-widest">Choose your preference</p>
+                        
+                        <div className="grid grid-cols-1 gap-4 mb-10">
+                            {Object.entries(translations).map(([code, trans]: [string, any]) => (code !== "te" && code !== "hi" && code !== "en") ? null : (
+                                <button
+                                    key={code}
+                                    onClick={() => setLanguage(code)}
+                                    className={`flex items-center justify-between p-5 rounded-[24px] border-2 transition-all font-bold ${language === code ? 'border-green-600 bg-green-50 text-green-700 shadow-lg shadow-green-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-green-100'}`}
+                                >
+                                    <span className="uppercase tracking-widest text-xs underline-offset-4">{trans.appTitle} ({code.toUpperCase()})</span>
+                                    {language === code && <Check className="w-5 h-5" />}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setStep(2)}
+                            className="w-full flex items-center justify-center gap-2 py-5 gradient-green text-white rounded-[24px] font-bold text-lg shadow-xl shadow-green-200 hover:scale-[1.02] active:scale-95 transition-all"
+                        >
+                            Next <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="step2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                    >
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">About You</h2>
+                        <p className="text-gray-400 font-bold text-sm mb-10 uppercase tracking-widest">Help us personalize your experience</p>
+                        
+                        <div className="grid grid-cols-1 gap-4 mb-10">
+                            {ageGroups.map((group) => (
+                                <button
+                                    key={group.id}
+                                    onClick={() => setAgeGroup(group.id)}
+                                    className={`flex items-center gap-5 p-5 rounded-[24px] border-2 transition-all font-bold ${ageGroup === group.id ? 'border-green-600 bg-green-50 text-green-700 shadow-lg shadow-green-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-green-100'}`}
+                                >
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${ageGroup === group.id ? 'bg-green-600 text-white shadow-md shadow-green-200' : 'bg-white'}`}>{group.icon}</div>
+                                    <span className="text-sm">{group.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setStep(1)}
+                                className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-[24px] font-bold hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
+                            >
+                                Back
+                            </button>
+                            <button
+                                disabled={!ageGroup || loading}
+                                onClick={handleFinish}
+                                className={`flex-[2] py-5 gradient-green text-white rounded-[24px] font-bold text-lg shadow-xl shadow-green-200 hover:scale-[1.02] active:scale-95 transition-all ${loading ? 'opacity-50' : ''}`}
+                            >
+                                {loading ? 'Saving...' : 'Finish'}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

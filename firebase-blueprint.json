@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "language": { "type": "string", "enum": ["en", "te", "hi", "ta", "kn"] },
+        "role": { "type": "string", "enum": ["user", "parent", "health_worker", "ngo_admin", "gov_admin", "super_admin"] },
+        "ageGroup": { "type": "string", "enum": ["child", "teen", "adult", "elderly", "pregnant"] },
+        "familyId": { "type": "string" },
+        "onboarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "language", "onboarded", "role"]
+    },
+    "Family": {
+      "title": "Family Circle",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "name": { "type": "string" },
+        "villageName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["adminId", "members"]
+    },
+    "HabitLog": {
+      "title": "Health Habit Log",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["water", "meal", "exercise", "junk"] },
+        "value": { "type": "number" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "value", "timestamp"]
+    },
+    "GrowthRecord": {
+      "title": "Pediatric/Elderly Growth Tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "height": { "type": "number" },
+        "weight": { "type": "number" },
+        "muac": { "type": "number", "description": "Mid-Upper Arm Circumference for malnutrition check" },
+        "headCircumference": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "timestamp"]
+    },
+    "AIRecommendation": {
+      "title": "AI Clinical Insight",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "category": { "type": "string", "enum": ["nutrition", "activity", "medical_alert", "tip"] },
+        "content": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "content", "category"]
+    },
+    "CommunityReport": {
+      "title": "Regional Health Analytics",
+      "type": "object",
+      "properties": {
+        "district": { "type": "string" },
+        "malnutritionCount": { "type": "number" },
+        "prevalentCondition": { "type": "string" },
+        "avgWaterIntake": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["district", "timestamp"]
+    },
+    "Device": {
+      "title": "Connected Health Device",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "deviceType": { "type": "string", "enum": ["Watch", "Scale", "BP Monitor", "Glucose Meter"] },
+        "status": { "type": "string", "enum": ["connected", "disconnected", "syncing"] },
+        "lastSync": { "type": "string", "format": "date-time" },
+        "batteryLevel": { "type": "number" }
+      },
+      "required": ["userId", "deviceName", "deviceType", "status"]
+    },
+    "SurveyResponse": {
+      "title": "Community Survey Response",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "surveyId": { "type": "string" },
+        "answers": { "type": "object" },
+        "location": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "surveyId", "answers", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Enterprise user profiles with RBAC."
+    },
+    "/families/{familyId}": {
+      "schema": "Family",
+      "description": "Relational family clusters."
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "HabitLog",
+      "description": "Live health tracking."
+    },
+    "/users/{userId}/growth/{recordId}": {
+      "schema": "GrowthRecord",
+      "description": "Detailed development tracking for children/elderly."
+    },
+    "/users/{userId}/devices/{deviceId}": {
+      "schema": "Device",
+      "description": "Linked hardware for automated tracking."
+    },
+    "/users/{userId}/ai_insights/{insightId}": {
+      "schema": "AIRecommendation",
+      "description": "Client-side feed of backend AI processing."
+    },
+    "/community_analytics/{reportId}": {
+      "schema": "CommunityReport",
+      "description": "Aggregated data for NGO/Gov stakeholders."
+    },
+    "/surveys/{surveyId}/responses/{responseId}": {
+      "schema": "SurveyResponse",
+      "description": "Bulk survey ingestion for rural health assessment."
+    }
+  }
+}

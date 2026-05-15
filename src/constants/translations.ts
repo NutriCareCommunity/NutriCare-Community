@@ -1,0 +1,142 @@
+export const translations: Record<string, any> = {
+  en: {
+    appTitle: "NutriCare Community",
+    tagline: "Eat Healthy, Live Healthy",
+    onboarding: {
+      selectLanguage: "Select Your Language",
+      welcome: "Welcome to NutriCare",
+      getStarted: "Get Started",
+    },
+    auth: {
+      login: "Login with Google",
+      logout: "Logout",
+    },
+    dashboard: {
+      home: "Home",
+      aiChat: "AI Assistant",
+      mealPlanner: "Meal Planner",
+      tracker: "Trackers",
+      community: "Community",
+      profile: "Profile",
+    },
+    features: {
+      water: "Water Tracker",
+      bmi: "BMI Calculator",
+      womenHealth: "Women's Health",
+      childNutrition: "Child Care",
+      diseaseDiet: "Disease Diet",
+    },
+  },
+  te: {
+    appTitle: "నూట్రికేర్ కమ్యూనిటీ",
+    tagline: "ఆరోగ్యంగా తినండి, హాయిగా ఉండండి",
+    onboarding: {
+      selectLanguage: "మీ భాషను ఎంచుకోండి",
+      welcome: "నూట్రికేర్‌కు స్వాగతం",
+      getStarted: "మొదలు పెట్టండి",
+    },
+    auth: {
+      login: "గూగుల్‌తో లాగిన్",
+      logout: "లాగ్ అవుట్",
+    },
+    dashboard: {
+      home: "హోమ్",
+      aiChat: "AI అసిస్టెంట్",
+      mealPlanner: "భోజన ప్రణాళిక",
+      tracker: "ట్రాకర్స్",
+      community: "కమ్యూనిటీ",
+      profile: "ప్రొఫైల్",
+    },
+    features: {
+      water: "నీటి ట్రాకర్",
+      bmi: "BMI కాలిక్యులేటర్",
+      womenHealth: "మహిళల ఆరోగ్యం",
+      childNutrition: "పిల్లల సంరక్షణ",
+      diseaseDiet: "వ్యాధి ఆహారం",
+    },
+  },
+  hi: {
+    appTitle: "न्यूट्रीकेयर कम्युनिटी",
+    tagline: "स्वस्थ खाएं, स्वस्थ रहें",
+    onboarding: {
+      selectLanguage: "अपनी भाषा चुनें",
+      welcome: "न्यूट्रीकेयर में आपका स्वागत है",
+      getStarted: "शुरू करें",
+    },
+    auth: {
+      login: "गूगल के साथ लॉगिन करें",
+      logout: "लॉग आउट",
+    },
+    dashboard: {
+      home: "होम",
+      aiChat: "AI सहायक",
+      mealPlanner: "भोजन योजना",
+      tracker: "ट्रैकर्स",
+      community: "समुदाय",
+      profile: "प्रोफ़ाइल",
+    },
+    features: {
+      water: "वाटर ट्रैकर",
+      bmi: "BMI कैलकुलेटर",
+      womenHealth: "महिला स्वास्थ्य",
+      childNutrition: "बाल देखभाल",
+      diseaseDiet: "रोग आहार",
+    },
+  },
+  ta: {
+    appTitle: "நியூட்ரிகேர் சமூகம்",
+    tagline: "ஆரோக்கியமாக சாப்பிடுங்கள், ஆரோக்கியமாக வாழுங்கள்",
+    onboarding: {
+      selectLanguage: "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
+      welcome: "நியூட்ரிகேர் வரவேற்கிறது",
+      getStarted: "தொடங்கவும்",
+    },
+    auth: {
+      login: "கூகுள் மூலம் உள்நுழைக",
+      logout: "வெளியேறு",
+    },
+    dashboard: {
+      home: "முகப்பு",
+      aiChat: "AI உதவியாளர்",
+      mealPlanner: "உணவுத் திட்டம்",
+      tracker: "டிராக்கர்கள்",
+      community: "சமூகம்",
+      profile: "சுயவிவரம்",
+    },
+    features: {
+      water: "தண்ணீர் டிராக்கர்",
+      bmi: "பிஎம்ஐ கால்குலேட்டர்",
+      womenHealth: "பெண்கள் ஆரோக்கியம்",
+      childNutrition: "குழந்தை பராமரிப்பு",
+      diseaseDiet: "நோய் உணவுக் கட்டுப்பாடு",
+    },
+  },
+  kn: {
+    appTitle: "ನ್ಯೂಟ್ರಿಕೇರ್ ಸಮುದಾಯ",
+    tagline: "ಆರೋಗ್ಯಕರವಾಗಿ ತಿನ್ನಿರಿ, ಆರೋಗ್ಯಕರವಾಗಿ ಬದುಕಿರಿ",
+    onboarding: {
+      selectLanguage: "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ",
+      welcome: "ನ್ಯೂಟ್ರಿಕೇರ್‌ಗೆ ಸುಸ್ವಾಗತ",
+      getStarted: "ಪ್ರಾರಂಭಿಸಿ",
+    },
+    auth: {
+      login: "ಗೂಗಲ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಿ",
+      logout: "ಲಾಗ್ ಔಟ್",
+    },
+    dashboard: {
+      home: "ಮುಖಪುಟ",
+      aiChat: "AI ಸಹಾಯಕ",
+      mealPlanner: "ಊಟದ ಯೋಜನೆ",
+      tracker: "ಟ್ರ್ಯಾಕರ್‌ಗಳು",
+      community: "ಸಮುದಾಯ",
+      profile: "ಪ್ರೊಫೈಲ್",
+    },
+    features: {
+      water: "ನೀರಿನ ಟ್ರ್ಯಾಕರ್",
+      bmi: "BMI ಕ್ಯಾಲ್ಕುಲೇಟರ್",
+      womenHealth: "ಮಹಿಳೆಯರ ಆರೋಗ್ಯ",
+      childNutrition: "ಮಕ್ಕಳ ಆರೈಕೆ",
+      diseaseDiet: "ರೋಗದ ಆಹಾರ ಕ್ರಮ",
+    },
+  },
+};

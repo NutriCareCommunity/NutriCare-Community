@@ -1,0 +1,16 @@
+{
+  "name": "NutriCare Community",
+  "short_name": "NutriCare",
+  "description": "Eat Healthy, Live Healthy - Community Nutrition Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2927/2927347.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
