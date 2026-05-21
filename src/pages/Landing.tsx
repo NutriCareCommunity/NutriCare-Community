@@ -1,26 +1,150 @@
-import React from "react";
+import React, { useState } from "react";
 import { auth } from "../lib/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { translations } from "../constants/translations";
 import { useApp } from "../context/AppContext";
-import { ShieldCheck, HeartPulse, Apple, Users, Languages } from "lucide-react";
+import { ShieldCheck, HeartPulse, Apple, Users, Languages, AlertTriangle, ExternalLink, Copy, Check, X } from "lucide-react";
 
 export default function Landing() {
   const { language, setLanguage } = useApp();
   const t = translations[language] || translations.en;
+  
+  const [authError, setAuthError] = useState<{ code: string; message: string; domain: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handleLogin = async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login failed:", err);
+      setAuthError({
+        code: err?.code || "unknown",
+        message: err?.message || "An unexpected authentication error occurred.",
+        domain: window.location.hostname
+      });
     }
   };
 
+  const copyDomain = () => {
+    if (authError) {
+      navigator.clipboard.writeText(authError.domain);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const firebaseProjectId = auth.app.options.projectId;
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAF9] text-gray-800">
+      {/* Auth Error Notification Modal/Banner */}
+      <AnimatePresence>
+        {authError && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed inset-x-0 top-0 z-50 p-4 max-w-2xl mx-auto mt-6"
+          >
+            <div className="bg-white rounded-[32px] border-2 border-amber-200 p-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-amber-500" />
+              <button 
+                onClick={() => setAuthError(null)} 
+                className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-all text-gray-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className="flex gap-5 items-start">
+                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl flex-shrink-0">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <div className="space-y-4 flex-1">
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                    Firebase Auth Configuration Required
+                  </h3>
+                  
+                  {authError.code === "auth/unauthorized-domain" ? (
+                    <div className="space-y-4 text-sm text-gray-600 leading-relaxed font-semibold">
+                      <p>
+                        Since you are hosting on Vercel, Firebase needs to authorize your production domain before Google sign-in works.
+                      </p>
+                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                        <code className="text-xs font-mono font-black text-gray-800 select-all">{authError.domain}</code>
+                        <button 
+                          onClick={copyDomain}
+                          className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-xs font-bold text-gray-700 flex items-center gap-2 shadow-sm whitespace-nowrap active:scale-95 transition-all"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copied ? "Copied" : "Copy "}
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">How to Authorize with 3 Clicks:</h4>
+                        <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                          <li>Open your Firebase Console by clicking <strong>Open Settings</strong> below</li>
+                          <li>Go to the <strong>Settings tab</strong>, then click <strong>Authorized Domains</strong></li>
+                          <li>Click <strong>Add Domain</strong> and paste your copied Vercel domain</li>
+                        </ol>
+                      </div>
+
+                      <div className="pt-2 flex gap-3">
+                        <a 
+                          href={`https://console.firebase.google.com/project/${firebaseProjectId}/authentication/settings`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-amber-200 transition-all"
+                        >
+                          Open Firebase Settings <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button 
+                          onClick={handleLogin}
+                          className="px-6 py-3 bg-gray-100 font-black text-xs text-gray-800 rounded-xl hover:bg-gray-200 transition-all uppercase tracking-widest"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  ) : authError.code === "auth/popup-blocked" ? (
+                    <div className="space-y-4 text-sm text-gray-600 leading-relaxed font-semibold">
+                      <p>
+                        Your browser blocked the Google Authentication window from opening.
+                      </p>
+                      <div className="space-y-1 text-xs">
+                        <p>💡 Close any active blockers, or enable popups for this site in your address bar.</p>
+                        <p>💡 If nesting inside an iframe, please open the direct deployment URL in a separate Tab.</p>
+                      </div>
+                      <button 
+                        onClick={handleLogin}
+                        className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-amber-200 transition-all"
+                      >
+                        Try Launching Pop-up Again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-sm text-gray-600 leading-relaxed font-semibold">
+                      <p>Error details returned from Firebase:</p>
+                      <p className="p-3 bg-rose-50 text-rose-700 rounded-xl font-mono text-xs break-all">{authError.message}</p>
+                      <p className="text-xs text-gray-400">Code: {authError.code}</p>
+                      <button 
+                        onClick={handleLogin}
+                        className="mt-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                      >
+                        Retry Sign-In
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero Section */}
       <header className="relative px-6 pt-16 pb-24 lg:pt-32 lg:pb-32 overflow-hidden bg-white/50 backdrop-blur-md">
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-green-200/20 rounded-full blur-3xl rounded-full" />

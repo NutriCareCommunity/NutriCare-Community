@@ -9,6 +9,7 @@ import { Check, ArrowRight, Baby, User, Users, Heart, Baby as Pregnancy } from "
 export default function Onboarding() {
   const { user, language, setLanguage, refreshProfile } = useApp();
   const [step, setStep] = useState(1);
+  const [role, setRole] = useState("user");
   const [ageGroup, setAgeGroup] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -22,6 +23,27 @@ export default function Onboarding() {
     { id: "pregnant", icon: <Pregnancy />, label: "Pregnant Woman" },
   ];
 
+  const rolesList = [
+    { 
+      id: "user", 
+      label: t.onboarding.roleUserLabel || "Individual User", 
+      desc: t.onboarding.roleUserDesc || "Track personal health, BMI, and hydration", 
+      icon: <User className="w-6 h-6" /> 
+    },
+    { 
+      id: "parent", 
+      label: t.onboarding.roleParentLabel || "Parent / Guardian", 
+      desc: t.onboarding.roleParentDesc || "Track child growth, pediatric diet, and family health", 
+      icon: <Users className="w-6 h-6" /> 
+    },
+    { 
+      id: "health_worker", 
+      label: t.onboarding.roleHealthWorkerLabel || "Health Worker / NGO", 
+      desc: t.onboarding.roleHealthWorkerDesc || "Manage community surveys and local health audits", 
+      icon: <Heart className="w-6 h-6" /> 
+    },
+  ];
+
   const handleFinish = async () => {
     if (!user) return;
     setLoading(true);
@@ -33,7 +55,7 @@ export default function Onboarding() {
         language,
         ageGroup,
         onboarded: true,
-        role: "user",
+        role,
         createdAt: serverTimestamp(),
       });
       await refreshProfile();
@@ -52,7 +74,7 @@ export default function Onboarding() {
       >
         <div className="h-2 bg-gray-100 relative">
             <motion.div 
-                animate={{ width: `${(step / 2) * 100}%` }}
+                animate={{ width: `${(step / 3) * 100}%` }}
                 className="absolute top-0 left-0 h-full gradient-green" 
             />
         </div>
@@ -89,17 +111,58 @@ export default function Onboarding() {
                             Next <ArrowRight className="w-5 h-5" />
                         </button>
                     </motion.div>
-                ) : (
+                ) : step === 2 ? (
                     <motion.div
                         key="step2"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                     >
-                        <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">About You</h2>
-                        <p className="text-gray-400 font-bold text-sm mb-10 uppercase tracking-widest">Help us personalize your experience</p>
-                        
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">{t.onboarding.selectRole}</h2>
+                        <p className="text-gray-400 font-bold text-sm mb-8 uppercase tracking-widest">Tailor your app features</p>
+
                         <div className="grid grid-cols-1 gap-4 mb-10">
+                            {rolesList.map((r) => (
+                                <button
+                                    key={r.id}
+                                    onClick={() => setRole(r.id)}
+                                    className={`flex items-start gap-4 p-5 rounded-[24px] text-left border-2 transition-all font-bold ${role === r.id ? 'border-green-600 bg-green-50 text-green-700 shadow-lg shadow-green-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-green-100'}`}
+                                >
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors ${role === r.id ? 'bg-green-600 text-white shadow-md shadow-green-200' : 'bg-white text-gray-400'}`}>{r.icon}</div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-black text-gray-800 leading-tight block mb-1">{r.label}</h4>
+                                        <p className="text-xs text-gray-400 font-medium leading-normal">{r.desc}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setStep(1)}
+                                className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-[24px] font-bold hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
+                            >
+                                Back
+                            </button>
+                            <button
+                                onClick={() => setStep(3)}
+                                className="flex-[2] py-5 gradient-green text-white rounded-[24px] font-bold text-lg shadow-xl shadow-green-200 hover:scale-[1.02] active:scale-95 transition-all"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="step3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                    >
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">{t.onboarding.aboutYouTitle}</h2>
+                        <p className="text-gray-400 font-bold text-sm mb-10 uppercase tracking-widest">{t.onboarding.aboutYouDesc}</p>
+                        
+                        <div className="grid grid-cols-1 gap-4 mb-10 max-h-[320px] overflow-y-auto no-scrollbar pr-1">
                             {ageGroups.map((group) => (
                                 <button
                                     key={group.id}
@@ -114,7 +177,7 @@ export default function Onboarding() {
 
                         <div className="flex gap-4">
                             <button
-                                onClick={() => setStep(1)}
+                                onClick={() => setStep(2)}
                                 className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-[24px] font-bold hover:bg-gray-100 transition-all uppercase tracking-widest text-xs"
                             >
                                 Back

@@ -30,7 +30,7 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'language', 'onboarded', 'role']) &&
              data.uid == request.auth.uid &&
-             data.role in ['user', 'parent'] && // Only self-register as user/parent
+             data.role in ['user', 'parent', 'health_worker'] && // Only self-register as user, parent, or health_worker
              data.language is string &&
              data.onboarded is bool;
     }
