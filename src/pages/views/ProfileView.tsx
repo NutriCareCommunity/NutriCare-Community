@@ -19,12 +19,16 @@ import {
   Heart,
   Share2,
   Globe,
-  HelpCircle
+  HelpCircle,
+  Sun,
+  Moon,
+  Smartphone,
+  Sparkles
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
 
 export default function ProfileView() {
-  const { profile, user, language, setLanguage } = useApp();
+  const { profile, user, language, setLanguage, theme, setTheme, appMode, setAppMode } = useApp();
   const [activeTab, setActiveTab] = useState("profile");
   const t = translations[language] || translations.en;
 
@@ -37,7 +41,7 @@ export default function ProfileView() {
   return (
     <div className="space-y-8 pb-32">
       <header className="flex justify-between items-center px-4">
-        <h2 className="text-3xl font-black text-gray-800 tracking-tight">Account</h2>
+        <h2 className="text-3xl font-black text-gray-800 tracking-tight">{t.dashboard.profile || "Account"}</h2>
         <div className="flex gap-2">
             <button className="p-3 bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-400 hover:text-indigo-500 transition-colors"><Bell className="w-5 h-5" /></button>
             <button className="p-3 bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-400 hover:text-indigo-500 transition-colors"><Settings className="w-5 h-5" /></button>
@@ -67,7 +71,7 @@ export default function ProfileView() {
                 </div>
                 <div className="flex-1 bg-gray-50 p-4 rounded-3xl border border-gray-100">
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Health Points</p>
-                    <p className="text-xl font-black text-emerald-500">842</p>
+                    <p className="text-xl font-black text-emerald-500">{profile?.points || 842}</p>
                 </div>
             </div>
         </div>
@@ -96,6 +100,7 @@ export default function ProfileView() {
         >
             {activeTab === 'profile' && (
                 <div className="space-y-4">
+                    {/* Language Preference Card */}
                     <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex items-center justify-between group">
                         <div className="flex items-center gap-5">
                             <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center"><Globe className="w-6 h-6" /></div>
@@ -111,6 +116,43 @@ export default function ProfileView() {
                             ))}
                         </select>
                     </div>
+
+                    {/* Theme Preference Card */}
+                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex items-center justify-between group">
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 bg-gray-50 md:bg-indigo-50/20 text-indigo-500 rounded-2xl flex items-center justify-center">
+                              {theme === 'light' ? <Sun className="w-6 h-6" /> : theme === 'dark' ? <Moon className="w-6 h-6" /> : <Smartphone className="w-6 h-6" />}
+                            </div>
+                            <span className="font-bold text-gray-800">{t.profilePage?.chooseTheme || "Theme Mode"}</span>
+                        </div>
+                        <select 
+                            value={theme} 
+                            onChange={(e) => setTheme(e.target.value as any)}
+                            className="bg-gray-100 text-[10px] font-black text-gray-600 px-4 py-2 rounded-full outline-none border-none focus:ring-0 uppercase tracking-widest"
+                        >
+                            <option value="light">{t.profilePage?.light || "Light"}</option>
+                            <option value="dark">{t.profilePage?.dark || "Dark"}</option>
+                            <option value="device">{t.profilePage?.device || "Device"}</option>
+                        </select>
+                    </div>
+
+                    {/* App Audience Edition Preference Card */}
+                    <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex items-center justify-between group">
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 bg-blue-50 text-emerald-500 rounded-2xl flex items-center justify-center"><Sparkles className="w-6 h-6" /></div>
+                            <span className="font-bold text-gray-800">{t.profilePage?.chooseAppMode || "Audience Edition"}</span>
+                        </div>
+                        <select 
+                            value={appMode} 
+                            onChange={(e) => setAppMode(e.target.value as any)}
+                            className="bg-gray-100 text-[10px] font-black text-gray-600 px-4 py-2 rounded-full outline-none border-none focus:ring-0 uppercase tracking-widest"
+                        >
+                            <option value="standard">{t.profilePage?.standard || "Standard"}</option>
+                            <option value="child">{t.profilePage?.child || "Child"}</option>
+                            <option value="elder">{t.profilePage?.elder || "Elderly"}</option>
+                        </select>
+                    </div>
+
                     <ProfileItem icon={<User />} label="Personal Information" sub="Manage your height, weight & goals" />
                     <ProfileItem icon={<Shield />} label="Security & Privacy" sub="Manage your health data access" />
                     <ProfileItem icon={<Activity />} label="Expert Consultation" sub="Premium health advice (Pro)" premium />

@@ -36,6 +36,7 @@ import {
   BatteryLow
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { translations } from "../../constants/translations";
 import { db } from "../../lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, addDoc, serverTimestamp, limit } from "firebase/firestore";
 import { 
@@ -51,24 +52,26 @@ import {
 } from "recharts";
 
 export default function TrackersView() {
-    const { activeTrackerModule: activeModule, setActiveTrackerModule: setActiveModule } = useApp();
+    const { activeTrackerModule: activeModule, setActiveTrackerModule: setActiveModule, language } = useApp();
+    const t = translations[language] || translations.en;
+    const tt = t.trackers || translations.en.trackers;
 
     const modules = [
-        { id: "overview", label: "Dashboard", icon: <PieIcon /> },
-        { id: "family", label: "Family", icon: <Users className="w-4 h-4" /> },
-        { id: "bmi", label: "BMI", icon: <Calculator /> },
-        { id: "water", label: "Water", icon: <Droplet /> },
-        { id: "child", label: "Child", icon: <Baby /> },
-        { id: "devices", label: "Devices", icon: <Smartphone /> },
-        { id: "elder", label: "Elderly", icon: <Activity /> },
+        { id: "overview", label: tt.dashboard, icon: <PieIcon /> },
+        { id: "bmi", label: tt.bmiTrack, icon: <Calculator /> },
+        { id: "water", label: tt.hydration, icon: <Droplet /> },
+        { id: "child", label: tt.childDiet, icon: <Baby /> },
+        { id: "women", label: tt.womenNutrition, icon: <Heart /> },
+        { id: "disease", label: tt.conditionDiet, icon: <Activity /> },
+        { id: "family", label: tt.familyLoop, icon: <Users className="w-4 h-4" /> },
     ];
 
     return (
         <div className="space-y-8 pb-32">
             <header className="flex justify-between items-center px-2">
                 <div>
-                    <h2 className="text-3xl font-black text-gray-800 tracking-tight">Health Trackers</h2>
-                    <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Enterprise Analytics</p>
+                    <h2 className="text-3xl font-black text-gray-800 tracking-tight">{tt.title}</h2>
+                    <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">{tt.subtitle}</p>
                 </div>
             </header>
 
@@ -115,14 +118,16 @@ export default function TrackersView() {
 }
 
 function FamilyManagementModule() {
-    const { familyMembers } = useApp();
+    const { familyMembers, language } = useApp();
+    const t = translations[language] || translations.en;
+    const tt = t.trackers || translations.en.trackers;
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <div className="bg-white rounded-[48px] p-8 md:p-12 border border-gray-100 shadow-xl space-y-10">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter">Family Health Loop</h3>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Managing {familyMembers.length} Profiles</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{tt.familyLoopTitle}</h3>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">{tt.managingProfiles}</p>
                     </div>
                     <div className="w-16 h-16 bg-indigo-50 rounded-[28px] flex items-center justify-center text-3xl shadow-inner border-2 border-white">👪</div>
                 </div>
@@ -341,47 +346,47 @@ function ElderWellnessModule() {
 
 function AnalyticsOverview() {
     const data = [
-        { day: 'Mon', water: 2.1, mood: 4 },
-        { day: 'Tue', water: 3.2, mood: 5 },
-        { day: 'Wed', water: 2.5, mood: 3 },
-        { day: 'Thu', water: 3.8, mood: 5 },
-        { day: 'Fri', water: 1.5, mood: 2 },
-        { day: 'Sat', water: 3.0, mood: 4 },
-        { day: 'Sun', water: 3.5, mood: 5 },
+        { day: 'Mon', water: 2.1, nutriScore: 78 },
+        { day: 'Tue', water: 3.2, nutriScore: 82 },
+        { day: 'Wed', water: 2.5, nutriScore: 80 },
+        { day: 'Thu', water: 3.8, nutriScore: 84 },
+        { day: 'Fri', water: 1.5, nutriScore: 79 },
+        { day: 'Sat', water: 3.0, nutriScore: 85 },
+        { day: 'Sun', water: 3.5, nutriScore: 88 },
     ];
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Hydration</p>
-                    <h4 className="text-3xl font-black text-gray-800 tracking-tight">21.6L</h4>
-                    <p className="text-green-500 text-[10px] font-black uppercase mt-1">↑ 12% vs last week</p>
+                <div className="bg-[#131B2A] p-8 rounded-[48px] border border-slate-800 shadow-md">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Hydration</p>
+                    <h4 className="text-3xl font-black text-white tracking-tight">21.6L</h4>
+                    <p className="text-emerald-400 text-[10px] font-black uppercase mt-1">↑ 12% vs last week</p>
                 </div>
-                <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Activity Score</p>
-                    <h4 className="text-3xl font-black text-gray-800 tracking-tight">9.2</h4>
-                    <p className="text-orange-500 text-[10px] font-black uppercase mt-1 underline">Action needed</p>
+                <div className="bg-[#131B2A] p-8 rounded-[48px] border border-slate-800 shadow-md">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">NutriScore Avg</p>
+                    <h4 className="text-3xl font-black text-white tracking-tight">84.5</h4>
+                    <p className="text-emerald-400 text-[10px] font-black uppercase mt-1">↑ Optimal Range</p>
                 </div>
-                <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm hidden md:block">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Family Sync</p>
-                    <h4 className="text-3xl font-black text-gray-800 tracking-tight">Active</h4>
-                    <p className="text-indigo-500 text-[10px] font-black uppercase mt-1">3 Devices Live</p>
+                <div className="bg-[#131B2A] p-8 rounded-[48px] border border-slate-800 shadow-md hidden md:block">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Meals Logged</p>
+                    <h4 className="text-3xl font-black text-white tracking-tight">3 Today</h4>
+                    <p className="text-indigo-400 text-[10px] font-black uppercase mt-1">100% Protein Target</p>
                 </div>
-                <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm hidden lg:block text-indigo-900 gradient-indigo-light">
+                <div className="bg-[#131B2A] p-8 rounded-[48px] border border-slate-800 shadow-md hidden lg:block text-indigo-200">
                     <p className="text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">Reward Points</p>
-                    <h4 className="text-3xl font-black tracking-tight">240</h4>
-                    <p className="text-[10px] font-black uppercase mt-1">Silver Tier 🥈</p>
+                    <h4 className="text-3xl font-black text-white tracking-tight">240</h4>
+                    <p className="text-[10px] font-black uppercase mt-1 text-indigo-400">Diet Streak 🥈</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm space-y-6 lg:col-span-2">
+                <div className="bg-[#131B2A] p-8 rounded-[48px] border border-slate-800 shadow-md space-y-6 lg:col-span-2">
                     <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-black text-gray-800">Weekly Performance</h3>
+                        <h3 className="text-xl font-black text-white">Weekly Performance</h3>
                         <div className="flex gap-4">
-                            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> <span className="text-[10px] font-bold text-gray-400 uppercase">Water</span></div>
-                            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-400" /> <span className="text-[10px] font-bold text-gray-400 uppercase">Mood</span></div>
+                            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> <span className="text-[10px] font-bold text-slate-400 uppercase">Water (L)</span></div>
+                            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-400" /> <span className="text-[10px] font-bold text-slate-400 uppercase">NutriScore</span></div>
                         </div>
                     </div>
                     <div className="h-64">
@@ -393,18 +398,18 @@ function AnalyticsOverview() {
                                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" />
                                 <XAxis 
                                     dataKey="day" 
                                     axisLine={false} 
                                     tickLine={false} 
-                                    tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} 
+                                    tick={{ fontSize: 10, fontWeight: 900, fill: '#64748B' }} 
                                 />
                                 <Tooltip 
-                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'black' }}
+                                    contentStyle={{ backgroundColor: '#0F172A', borderRadius: '24px', border: '1px solid #334155', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'black', color: '#F1F5F9' }}
                                 />
                                 <Area type="monotone" dataKey="water" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorWater)" />
-                                <Line type="monotone" dataKey="mood" stroke="#fb923c" strokeWidth={4} dot={{ r: 6, fill: '#fb923c', strokeWidth: 4, stroke: '#fff' }} />
+                                <Line type="monotone" dataKey="nutriScore" stroke="#fb923c" strokeWidth={4} dot={{ r: 6, fill: '#fb923c', strokeWidth: 4, stroke: '#1E293B' }} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>

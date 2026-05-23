@@ -11,23 +11,388 @@
   --color-brand-orange: #FF6B35;
 }
 
+/* High-Fidelity Nutrition & Health Centric Theme Settings */
+
+/* ==========================================================
+   DARK MODE: PRESERVED ORGANIC OBSIDIAN FOREST & MINT CORE
+   ========================================================== */
+.theme-dark {
+  background-color: #07100B !important; /* Deep organic mossy black */
+  color: #EDF5EF !important; /* Warm mint herbal white */
+
+  /* Map standard tailwind slate values to rich dark forest-moss tones for instant dark mode */
+  --color-slate-50: #0C1A12;
+  --color-slate-100: #EDF5EF;
+  --color-slate-200: #D8E6DC;
+  --color-slate-300: #B2C8B8;
+  --color-slate-400: #88A992;
+  --color-slate-450: #688C73;
+  --color-slate-500: #55725F;
+  --color-slate-600: #445B4B;
+  --color-slate-700: #29382D;
+  --color-slate-800: #1C2B21;
+  --color-slate-850: #131F17;
+  --color-slate-900: #0C150F;
+  --color-slate-950: #07100B;
+
+  /* Redefine Indigo theme variables to map directly to nutritious Emerald and Sage greens */
+  --color-indigo-50: #ECFDF5;
+  --color-indigo-100: #D1FAE5;
+  --color-indigo-200: #A7F3D0;
+  --color-indigo-300: #6EE7B7;
+  --color-indigo-400: #34D399; /* Minty indicator */
+  --color-indigo-500: #10B981; /* High-vitamin emerald */
+  --color-indigo-600: #059669;
+  --color-indigo-700: #047857;
+  --color-indigo-800: #065F46;
+  --color-indigo-900: #064E3B;
+  --color-indigo-950: #022C22;
+}
+
+/* Base and background maps for hardcoded colors in dark mode */
+.theme-dark .bg-\[\#0B0F19\] { background-color: #07100B !important; }
+.theme-dark .bg-\[\#0B1524\] { background-color: #08120D !important; }
+.theme-dark .bg-\[\#131B2A\] { background-color: #0D1B12 !important; border-color: #172B1E !important; }
+.theme-dark .bg-\[\#121B2A\] { background-color: #0C1A11 !important; border-color: #162C1D !important; }
+.theme-dark .text-slate-100,
+.theme-dark .text-white { color: #EDF5EF !important; }
+.theme-dark .border-slate-800,
+.theme-dark .border-slate-700 { border-color: #1C2D21 !important; }
+
+/* Interactive colors mapping to healthy organic hues in dark mode */
+.theme-dark .text-indigo-400 { color: #34D399 !important; }
+.theme-dark .text-indigo-300 { color: #6EE7B7 !important; }
+.theme-dark .text-indigo-200 { color: #A7F3D0 !important; }
+.theme-dark .bg-indigo-600,
+.theme-dark .bg-indigo-500 { background-color: #10B981 !important; color: #FFFFFF !important; }
+.theme-dark .bg-indigo-950\/40 { background-color: rgba(6, 78, 59, 0.4) !important; border-color: rgba(16, 185, 129, 0.2) !important; }
+.theme-dark .gradient-indigo { background: linear-gradient(135deg, #064E3B 0%, #059669 100%) !important; }
+
+/* ==========================================================
+   LIGHT MODE: THE ORGANIC FRESH CELERY & MORNING GARDEN THEME
+   ========================================================== */
+.theme-light {
+  background-color: #F4F8F5 !important; /* Fresh light herbal sage cream */
+  color: #14251C !important; /* Deep forest-black for crisp readability */
+
+  /* Redefine slate scales to represent rich earthy vegetable gradients */
+  --color-slate-50: #FFFFFF; /* High-purity white */
+  --color-slate-100: #14251C;
+  --color-slate-200: #233C2C;
+  --color-slate-300: #3E5A47;
+  --color-slate-400: #577761;
+  --color-slate-450: #6D8E78;
+  --color-slate-500: #85A38F;
+  --color-slate-600: #9CBAA6;
+  --color-slate-700: #C2D5C7;
+  --color-slate-800: #D8E6DC; /* Leafy borders */
+  --color-slate-850: #E6EFE9;
+  --color-slate-900: #F3F7F4;
+  --color-slate-950: #FFFFFF;
+
+  /* Redefine Indigo variables to match dynamic herbal greens in light mode */
+  --color-indigo-50: #EFFDF5;
+  --color-indigo-100: #D1FAE5;
+  --color-indigo-200: #A7F3D0;
+  --color-indigo-300: #10B981;
+  --color-indigo-400: #059669; /* Rich leafy dark green */
+  --color-indigo-500: #047857;
+  --color-indigo-600: #065F46;
+  --color-indigo-700: #064E3B;
+  --color-indigo-800: #022C22;
+  --color-indigo-900: #011E17;
+  --color-indigo-950: #EDFDF5;
+}
+
+/* Explicit Light Mode Base Style Overrides for custom codes */
+.theme-light .bg-\[\#0B0F19\] {
+  background-color: #F4F8F5 !important;
+}
+.theme-light .bg-\[\#0B1524\] {
+  background-color: #F4F8F5 !important;
+}
+.theme-light .bg-\[\#131B2A\] {
+  background-color: #FFFFFF !important;
+  border-color: #D8E6DC !important;
+  box-shadow: 0 10px 30px -4px rgba(20, 37, 28, 0.04), 0 4px 12px -2px rgba(20, 37, 28, 0.02) !important;
+}
+.theme-light .bg-\[\#121B2A\] {
+  background-color: #FFFFFF !important;
+  border-color: #D8E6DC !important;
+  box-shadow: 0 10px 30px -4px rgba(20, 37, 28, 0.04) !important;
+}
+.theme-light .bg-slate-900 {
+  background-color: #EDF4EF !important;
+  border-color: #C2D5C7 !important;
+}
+.theme-light .bg-slate-950 {
+  background-color: #FFFFFF !important;
+}
+.theme-light .bg-slate-800,
+.theme-light .bg-\[\#0E1524\],
+.theme-light .bg-\[\#0e1622\],
+.theme-light .bg-\[\#101725\] {
+  background-color: #EDF4EF !important;
+  border-color: #C2D5C7 !important;
+}
+.theme-light .bg-slate-850 {
+  background-color: #D8E6DC !important;
+}
+.theme-light .bg-[#090E18] {
+  background-color: #E6EFE9 !important;
+  border-color: #C2D5C7 !important;
+}
+.theme-light .bg-[#090E18] *,
+.theme-light .bg-[#090E18] p,
+.theme-light .bg-[#090E18] span,
+.theme-light .bg-[#090E18] button {
+  color: #14251C !important;
+}
+.theme-light .bg-slate-900\/60 {
+  background-color: rgba(237, 244, 239, 0.8) !important;
+}
+.theme-light .bg-\[\#0F172A\] {
+  background-color: #FFFFFF !important;
+  border-color: #D8E6DC !important;
+}
+.theme-light .bg-\[\#1D283C\] {
+  background-color: #EFF8F3 !important;
+  border-color: #A7F3D0 !important;
+}
+.theme-light .bg-indigo-950\/60 {
+  background-color: #EFFDF5 !important;
+  border-color: #D8E6DC !important;
+}
+.theme-light main {
+  background-color: #F4F8F5 !important;
+}
+.theme-light header {
+  background-color: rgba(244, 248, 245, 0.85) !important;
+  border-color: #D8E6DC !important;
+}
+.theme-light nav {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #D8E6DC !important;
+  box-shadow: 0 -10px 45px rgba(20, 37, 28, 0.05) !important;
+}
+
+/* Text and content overrides for high-contrast light mode */
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-white {
+  color: #14251C !important;
+}
+.theme-light .text-slate-350,
+.theme-light .text-slate-300 {
+  color: #233C2C !important;
+}
+.theme-light .text-slate-400,
+.theme-light .text-slate-450 {
+  color: #577761 !important;
+}
+
+/* Indigo components transformed to rich premium greens in light mode */
+.theme-light .text-indigo-400,
+.theme-light .text-indigo-300 {
+  color: #059669 !important;
+}
+.theme-light .text-indigo-200 {
+  color: #064E3B !important;
+}
+.theme-light .text-emerald-400 {
+  color: #047857 !important;
+}
+.theme-light .text-rose-400 {
+  color: #C01C3F !important;
+}
+.theme-light .text-orange-400 {
+  color: #D97706 !important;
+}
+.theme-light .border-slate-800,
+.theme-light .border-slate-850,
+.theme-light .border-slate-800\/80,
+.theme-light .border-slate-800\/65,
+.theme-light .border-slate-800\/40,
+.theme-light .border-slate-700,
+.theme-light .border-slate-700\/60 {
+  border-color: #D8E6DC !important;
+}
+
+/* Light mode form controls */
+.theme-light input, 
+.theme-light textarea,
+.theme-light select {
+  background-color: #FFFFFF !important;
+  color: #14251C !important;
+  border-color: #C2D5C7 !important;
+}
+.theme-light select option {
+  background-color: #FFFFFF !important;
+  color: #14251C !important;
+}
+.theme-light tr.hover\:bg-slate-900\/25:hover {
+  background-color: rgba(216, 230, 220, 0.45) !important;
+}
+
+/* Guard important buttons and statuses to remain vivid on white backdrops */
+.theme-light .bg-indigo-600 .text-white,
+.theme-light .bg-indigo-500 .text-white,
+.theme-light .bg-indigo-700 .text-white,
+.theme-light .bg-[#1D4ED8] .text-white,
+.theme-light button.bg-indigo-600,
+.theme-light button.bg-indigo-700,
+.theme-light button.bg-emerald-500,
+.theme-light button.bg-rose-500,
+.theme-light button.gradient-indigo,
+.theme-light button.gradient-green,
+.theme-light button.gradient-rose,
+.theme-light button.gradient-blue,
+.theme-light button.gradient-orange,
+.theme-light .gradient-indigo .text-white,
+.theme-light .gradient-indigo *,
+.theme-light .bg-indigo-900 *,
+.theme-light .bg-indigo-950 * {
+  color: #FFFFFF !important;
+}
+
+.theme-light .bg-indigo-900,
+.theme-light .bg-indigo-950,
+.theme-light button.bg-indigo-900,
+.theme-light button.bg-indigo-950 {
+  background-color: #065F46 !important;
+}
+
+.theme-light .gradient-indigo {
+  background: linear-gradient(135deg, #064E3B 0%, #059669 100%) !important;
+}
+
+/* Panel and status cards with custom backgrounds for healthy food vibe */
+.theme-light .bg-emerald-950\/80,
+.theme-light .bg-emerald-950 {
+  background-color: #D1FAE5 !important;
+  border-color: #A7F3D0 !important;
+}
+.theme-light .bg-emerald-950\/40 {
+  background-color: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #047857 !important;
+}
+.theme-light .text-emerald-300 {
+  color: #047857 !important;
+}
+.theme-light .text-emerald-100 {
+  color: #064E3B !important;
+}
+
+/* Actions cards mappings for light mode */
+.theme-light .bg-\[\#14233c\] {
+  background-color: #EFFDF5 !important;
+  border-color: #A7F3D0 !important;
+}
+.theme-light .bg-\[\#14233c\] .text-white,
+.theme-light .bg-\[\#14233c\] p,
+.theme-light .bg-\[\#14233c\] span {
+  color: #064E3B !important;
+}
+.theme-light .bg-\[\#14233c\] .text-indigo-400 {
+  color: #059669 !important;
+}
+
+.theme-light .bg-\[\#0e2744\] {
+  background-color: #FFFBEB !important; /* Gentle healthy honey amber */
+  border-color: #FDE68A !important;
+}
+.theme-light .bg-\[\#0e2744\] .text-white,
+.theme-light .bg-\[\#0e2744\] p,
+.theme-light .bg-\[\#0e2744\] span {
+  color: #78350F !important;
+}
+.theme-light .bg-\[\#0e2744\] .text-blue-400 {
+  color: #D97706 !important;
+}
+
+.theme-light .bg-\[\#251216\] {
+  background-color: #FFF5F5 !important; /* Pomegranate pink/red */
+  border-color: #FECDD3 !important;
+}
+.theme-light .bg-\[\#251216\] .text-white,
+.theme-light .bg-\[\#251216\] p,
+.theme-light .bg-\[\#251216\] span {
+  color: #9F1239 !important;
+}
+.theme-light .bg-\[\#251216\] .text-rose-400 {
+  color: #E11D48 !important;
+}
+
+/* Safe contrast corrections */
+.theme-light .text-indigo-100 {
+  color: #064E3B !important;
+}
+.theme-light .text-neutral-400 {
+  color: #577761 !important;
+}
+
+/* Overrides for common tags hardcoded in dark classes globally */
+.theme-dark .bg-white {
+  background-color: #0D1B12 !important;
+  border-color: #172B1E !important;
+}
+.theme-dark .text-gray-800,
+.theme-dark .text-gray-900 {
+  color: #EDF5EF !important;
+}
+.theme-dark .text-gray-700,
+.theme-dark .text-gray-600 {
+  color: #B2C8B8 !important;
+}
+.theme-dark .border-gray-100,
+.theme-dark .border-gray-200 {
+  border-color: #172B1E !important;
+}
+.theme-dark .bg-gray-50,
+.theme-dark .bg-gray-100 {
+  background-color: #08120D !important;
+}
+.theme-dark .bg-blue-50 {
+  background-color: #132418 !important;
+}
+.theme-dark .text-blue-500 {
+  color: #34D399 !important;
+}
+.theme-dark .text-indigo-500 {
+  color: #10B981 !important;
+}
+.theme-dark .bg-indigo-50\/20 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+.theme-dark input,
+.theme-dark select,
+.theme-dark textarea {
+  background-color: #08120D !important;
+  color: #EDF5EF !important;
+  border-color: #172B1E !important;
+}
+
+/* ==========================================================
+   GLOBAL COMPONENT LAYER & SHADOW STYLES
+   ========================================================== */
 @layer components {
   .glass-card {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    box-shadow: 0 8px 32px 0 rgba(4, 120, 87, 0.05);
   }
 
   .premium-shadow {
     box-shadow: 
-      0 10px 15px -3px rgba(0, 0, 0, 0.02),
-      0 4px 6px -2px rgba(0, 0, 0, 0.01),
-      0 20px 40px -10px rgba(0, 0, 0, 0.05);
+      0 10px 15px -3px rgba(20, 37, 28, 0.02),
+      0 4px 6px -2px rgba(20, 37, 28, 0.01),
+      0 20px 40px -10px rgba(20, 37, 28, 0.04);
   }
 
   .gradient-indigo {
-    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+    background: linear-gradient(135deg, #064E3B 0%, #059669 100%);
   }
 
   .gradient-green {
@@ -39,19 +404,19 @@
   }
 
   .gradient-blue {
-    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    background: linear-gradient(135deg, #047857 0%, #10B981 100%);
   }
 
   .gradient-rose {
-    background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
+    background: linear-gradient(135deg, #E11D48 0%, #9F1239 100%);
   }
 
   .gradient-health-glow {
-    background: radial-gradient(circle at 20% 30%, rgba(34, 197, 94, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
   }
 
   .nav-shadow {
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 -10px 40px rgba(20, 37, 28, 0.03);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -68,3 +433,4 @@
     transition: scale 0.1s ease;
   }
 }
+

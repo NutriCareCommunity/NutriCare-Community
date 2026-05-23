@@ -1,12 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { db } from "../lib/firebase";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, orderBy } from "firebase/firestore";
-
-const getApiKey = () => {
-  return import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : "") || "";
-};
-
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, limit } from "firebase/firestore";
 
 export interface FoodAnalysis {
   name: string;
@@ -21,83 +14,77 @@ export interface FoodAnalysis {
 
 export class GeminiAIBackend {
   /**
-   * AI Food Detection Pipeline
-   * User uploads image -> Analysis -> Logged to Firestore
+   * AI Food Detection Pipeline - CLIENT PROXY
+   * Proxies AI computation to server side, logs to Firestore on client side
    */
   static async analyzeIndianFood(base64Image: string, userId: string): Promise<FoodAnalysis> {
-    const prompt = `Analyze this Indian food image. Provide: name, calories, protein(g), sugar(g), healthScore(1-10), ingredients, and healthier alternatives suitable for rural Indian context. Return ONLY JSON.`;
+    try {
+      const response = await fetch("/api/gemini/analyze-food", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64Image }),
+      });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: {
-        parts: [
-          { inlineData: { data: base64Image, mimeType: "image/jpeg" } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            calories: { type: Type.NUMBER },
-            protein: { type: Type.NUMBER },
-            sugar: { type: Type.NUMBER },
-            healthScore: { type: Type.NUMBER },
-            ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
-            alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            isRuralFriendly: { type: Type.BOOLEAN }
-          },
-          required: ["name", "calories", "protein", "healthScore"]
-        }
+      if (!response.ok) {
+        throw new Error(`Failed to analyze image: Backend returned status ${response.status}`);
       }
-    });
 
-    const analysis = JSON.parse(response.text) as FoodAnalysis;
+      const analysis = await response.json() as FoodAnalysis;
 
-    // Log to secure nutrition_profiles (via users habits for this MVP)
-    await addDoc(collection(db, `users/${userId}/habits`), {
-      type: "meal",
-      value: analysis.calories,
-      description: `AI Detected: ${analysis.name}`,
-      data: analysis,
-      timestamp: serverTimestamp()
-    });
+      // Log to secure nutrition_profiles
+      await addDoc(collection(db, `users/${userId}/habits`), {
+        type: "meal",
+        value: analysis.calories || 0,
+        description: `AI Detected: ${analysis.name}`,
+        data: analysis,
+        timestamp: serverTimestamp()
+      });
 
-    return analysis;
+      return analysis;
+    } catch (error) {
+      console.error("Client side analyzeIndianFood Error:", error);
+      throw error;
+    }
   }
 
   /**
-   * Rural Health Advisor
-   * Generates localized recommendations based on recent logs
+   * Rural Health Advisor - CLIENT PROXY
+   * Pulls local activity logs, proxies synth to server side, stores result to Firestore
    */
   static async generateHealthAdvisor(userId: string, language: string = "en"): Promise<string> {
-    // 1. Fetch recent activity
-    const habitsRef = collection(db, `users/${userId}/habits`);
-    const q = query(habitsRef, orderBy("timestamp", "desc"), limit(10));
-    const snap = await getDocs(q);
-    const history = snap.docs.map(d => d.data());
+    try {
+      // 1. Fetch recent activity (remains client-side for user credentials/data)
+      const habitsRef = collection(db, `users/${userId}/habits`);
+      const q = query(habitsRef, orderBy("timestamp", "desc"), limit(10));
+      const snap = await getDocs(q);
+      const history = snap.docs.map(d => d.data());
 
-    // 2. Synthesize Advice
-    const prompt = `Based on this user's nutrition history: ${JSON.stringify(history)}. 
-    Give a short, encouraging health tip in ${language}. 
-    Focus on Indian rural availability (millet, pulses, seasonal greens). 
-    Keep it under 3 sentences.`;
+      // 2. Request synthesized advice securely from backend
+      const response = await fetch("/api/gemini/health-advisor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history, language }),
+      });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt
-    });
+      if (!response.ok) {
+        throw new Error(`Failed to generate health advisor: Backend status ${response.status}`);
+      }
 
-    // 3. Store for real-time delivery
-    await addDoc(collection(db, `users/${userId}/ai_insights`), {
-      category: "nutrition",
-      content: response.text,
-      isRead: false,
-      timestamp: serverTimestamp()
-    });
+      const data = await response.json();
+      const adviceText = data.text || "Eat healthy for more energy! 🥗";
 
-    return response.text;
+      // 3. Store for real-time delivery
+      await addDoc(collection(db, `users/${userId}/ai_insights`), {
+        category: "nutrition",
+        content: adviceText,
+        isRead: false,
+        timestamp: serverTimestamp()
+      });
+
+      return adviceText;
+    } catch (err) {
+      console.error("generateHealthAdvisor client error:", err);
+      return "Make healthy choices and enjoy local nutritious food! ❤️";
+    }
   }
 }

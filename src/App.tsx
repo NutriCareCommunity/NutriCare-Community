@@ -17,13 +17,13 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0B0F19]">
         <motion.div
            animate={{ rotate: 360 }}
            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-           className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full"
+           className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full shadow-lg shadow-emerald-500/20"
         />
-        <p className="mt-4 text-emerald-600 font-medium animate-pulse">{t.appTitle}...</p>
+        <p className="mt-4 text-emerald-400 font-bold tracking-widest text-xs uppercase animate-pulse">{t.appTitle}...</p>
       </div>
     );
   }
@@ -44,7 +44,7 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <div className="min-h-screen bg-[#F8FAF9] font-sans selection:bg-emerald-100 selection:text-emerald-900">
+      <div className="min-h-screen bg-[#0B0F19] text-slate-100 font-sans selection:bg-emerald-800 selection:text-white">
         <AppContent />
       </div>
     </AppProvider>

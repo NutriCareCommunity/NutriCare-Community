@@ -12,12 +12,14 @@ interface AppContextType {
   loading: boolean;
   language: string;
   appMode: "standard" | "child" | "elder";
+  theme: "light" | "dark" | "device";
   activeTrackerModule: string;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   setActiveTrackerModule: (id: string) => void;
   setAppMode: (mode: "standard" | "child" | "elder") => void;
   setLanguage: (lang: string) => void;
+  setTheme: (theme: "light" | "dark" | "device") => void;
   refreshProfile: () => Promise<void>;
   addCareAlert: (alert: any) => void;
   connectDevice: (device: any) => Promise<void>;
@@ -34,8 +36,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState(localStorage.getItem("app_lang") || "en");
   const [appMode, setAppMode] = useState<"standard" | "child" | "elder">("standard");
+  const [theme, setThemeState] = useState<"light" | "dark" | "device">(
+    (localStorage.getItem("app_theme") as "light" | "dark" | "device") || "device"
+  );
   const [activeTrackerModule, setActiveTrackerModule] = useState("overview");
   const [activeTab, setActiveTab] = useState("home");
+
+  // Hook to handle dynamic theme injection
+  useEffect(() => {
+    const root = document.documentElement;
+    const applyTheme = (currentTheme: "light" | "dark" | "device") => {
+      root.classList.remove("theme-light", "theme-dark");
+      if (currentTheme === "device") {
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.classList.add(isDark ? "theme-dark" : "theme-light");
+      } else {
+        root.classList.add(currentTheme === "light" ? "theme-light" : "theme-dark");
+      }
+    };
+
+    applyTheme(theme);
+    localStorage.setItem("app_theme", theme);
+
+    if (theme === "device") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = (e: MediaQueryListEvent) => {
+        root.classList.remove("theme-light", "theme-dark");
+        root.classList.add(e.matches ? "theme-dark" : "theme-light");
+      };
+      mediaQuery.addEventListener("change", handler);
+      return () => mediaQuery.removeEventListener("change", handler);
+    }
+  }, [theme]);
+
+  const setTheme = (t: "light" | "dark" | "device") => {
+    setThemeState(t);
+  };
 
   const fetchProfile = async (uid: string) => {
     try {
@@ -138,12 +174,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loading, 
       language, 
       appMode,
+      theme,
       activeTrackerModule,
       activeTab,
       setActiveTab,
       setActiveTrackerModule,
       setAppMode,
       setLanguage, 
+      setTheme,
       refreshProfile,
       addCareAlert,
       connectDevice

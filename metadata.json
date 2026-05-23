@@ -2,5 +2,5 @@
   "name": "NutriCare Community",
   "description": "A multilingual nutrition platform for Indian communities featuring AI health guidance, meal planning, and habit tracking for all age groups.",
   "requestFramePermissions": ["microphone", "geolocation"],
-  "majorCapabilities": ["AI Nutrition Assistant", "Meal Planner", "Water Tracker", "BMI Calculator", "Community Surveys"]
+  "majorCapabilities": ["AI Nutrition Assistant", "Meal Planner", "Water Tracker", "BMI Calculator", "Community Surveys", "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
