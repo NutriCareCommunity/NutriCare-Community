@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useApp } from "../../context/AppContext";
 import { translations } from "../../constants/translations";
 import { motion, AnimatePresence } from "framer-motion";
-import { db } from "../../lib/firebase";
+import { db, handleFirestoreError, OperationType } from "../../lib/firebase";
 import { doc, setDoc, increment } from "firebase/firestore";
 import { 
   Search, 
@@ -209,6 +209,7 @@ export default function LearningView() {
             window.dispatchEvent(new Event("localPointsUpdated"));
             return;
         }
+        const path = `users/${user.uid}`;
         try {
             const userRef = doc(db, "users", user.uid);
             await setDoc(userRef, {
@@ -216,7 +217,7 @@ export default function LearningView() {
             }, { merge: true });
             await refreshProfile();
         } catch (err) {
-            console.error("Error writing points reward:", err);
+            handleFirestoreError(err, OperationType.WRITE, path);
         }
     };
 

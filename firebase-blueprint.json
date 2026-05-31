@@ -11,6 +11,7 @@
         "role": { "type": "string", "enum": ["user", "parent", "health_worker", "ngo_admin", "gov_admin", "super_admin"], "description": "Primary role selected during onboarding to tailor experience (user, parent, health_worker)." },
         "ageGroup": { "type": "string", "enum": ["child", "teen", "adult", "elderly", "pregnant"] },
         "familyId": { "type": "string" },
+        "points": { "type": "integer" },
         "onboarded": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

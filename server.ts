@@ -4,6 +4,13 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
+// Import modular routing systems
+import usersRouter from "./lib/api/users";
+import nutritionRouter from "./lib/api/nutrition";
+import communityRouter from "./lib/api/community";
+import chatRouter from "./lib/api/chat";
+import portalRouter from "./lib/api/portal";
+
 dotenv.config();
 
 /**
@@ -28,6 +35,13 @@ async function startServer() {
   });
 
   app.use(express.json());
+
+  // Mount modular extended routes
+  app.use("/api", usersRouter);
+  app.use("/api", nutritionRouter);
+  app.use("/api", communityRouter);
+  app.use("/api", chatRouter);
+  app.use("/api", portalRouter);
 
   // 1. HEALTH MONITORING
   app.get("/api/health", (req, res) => {

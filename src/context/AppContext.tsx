@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth, db } from "../lib/firebase";
+import { auth, db, handleFirestoreError, OperationType } from "../lib/firebase";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc, setDoc, collection, query, getDocs, addDoc } from "firebase/firestore";
 
@@ -74,6 +74,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const fetchProfile = async (uid: string) => {
+    const path = `users/${uid}`;
     try {
       const docRef = doc(db, "users", uid);
       const docSnap = await getDoc(docRef);
@@ -86,7 +87,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setProfile(null);
       }
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      handleFirestoreError(err, OperationType.GET, path);
     }
   };
 
@@ -101,6 +102,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const fetchDevices = async (uid: string) => {
+    const path = `users/${uid}/devices`;
     try {
       const q = query(collection(db, "users", uid, "devices"));
       const snap = await getDocs(q);
@@ -115,7 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setDevices(devList);
       }
     } catch (err) {
-      console.error("Error fetching devices:", err);
+      handleFirestoreError(err, OperationType.GET, path);
     }
   };
 
@@ -150,6 +152,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const connectDevice = async (device: any) => {
     if (!user) return;
+    const path = `users/${user.uid}/devices`;
     try {
       await addDoc(collection(db, "users", user.uid, "devices"), {
         ...device,
@@ -160,7 +163,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       await fetchDevices(user.uid);
     } catch (err) {
-      console.error("Error connecting device:", err);
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   };
 

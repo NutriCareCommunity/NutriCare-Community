@@ -5,9 +5,10 @@ import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, User, Bot, Sparkles, Loader2, Volume2, CheckCircle2, Droplet, Image as ImageIcon, Camera } from "lucide-react";
 import { VoiceNarration } from "../../components/common/VoiceNarration";
-import { db } from "../../lib/firebase";
+import { db, handleFirestoreError, OperationType } from "../../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { GeminiAIBackend } from "../../services/geminiService";
+import { translations } from "../../constants/translations";
 
 interface Message {
   role: "user" | "ai";
@@ -16,10 +17,20 @@ interface Message {
 
 export default function AIChatView() {
   const { language, profile, user, appMode } = useApp();
+  const t = translations[language] || translations.en;
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     { role: "ai", content: "Namaste! I am your Caring Nutrition Companion. I'm here to help you and your family eat well. ❤️" }
   ]);
+
+  useEffect(() => {
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].role === 'ai') {
+        return [{ role: "ai", content: t.aiChat.greeting || "Namaste! I am your Caring Nutrition Companion. I'm here to help you and your family eat well. ❤️" }];
+      }
+      return prev;
+    });
+  }, [language]);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [pendingAction, setPendingAction] = useState<any | null>(null);
@@ -107,6 +118,7 @@ export default function AIChatView() {
   const executeAction = async (action: any) => {
     if (!user || !action || action.type !== 'log_habit') return;
 
+    const path = `users/${user.uid}/habits`;
     try {
       await addDoc(collection(db, "users", user.uid, "habits"), {
         userId: user.uid,
@@ -116,7 +128,7 @@ export default function AIChatView() {
         timestamp: serverTimestamp()
       });
     } catch (err) {
-      console.error("Action execution failed:", err);
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   };
 
@@ -178,10 +190,10 @@ export default function AIChatView() {
             👩‍⚕️
         </motion.div>
         <div>
-            <h3 className="text-xl font-black text-indigo-900 tracking-tighter">Companion</h3>
+            <h3 className="text-xl font-black text-indigo-900 tracking-tighter">{t.aiChat.companion || "Companion"}</h3>
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Online & Caring</span>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">{t.aiChat.onlineCaring || "Online & Caring"}</span>
             </div>
         </div>
       </div>
@@ -222,7 +234,7 @@ export default function AIChatView() {
                               }`}
                           >
                               {explainingId === i ? <Loader2 className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3" />}
-                              Explain Simply
+                              {t.aiChat.explainSimply || "Explain Simply"}
                           </button>
                       </div>
                   )}
@@ -251,8 +263,8 @@ export default function AIChatView() {
                           </div>
                           
                           <div>
-                              <h3 className="text-3xl font-black text-gray-900 tracking-tighter">Log activity?</h3>
-                              <p className="text-gray-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em]">Confirmation Loop</p>
+                              <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{t.aiChat.logActivity || "Log activity?"}</h3>
+                              <p className="text-gray-400 font-bold text-[10px] mt-2 uppercase tracking-[0.3em]">{t.aiChat.confirmationLoop || "Confirmation Loop"}</p>
                           </div>
 
                           <div className="bg-gray-50 border border-gray-100 p-8 rounded-[36px] w-full shadow-inner">
@@ -262,12 +274,12 @@ export default function AIChatView() {
                           </div>
 
                           <div className="flex gap-4 w-full">
-                              <button onClick={() => setPendingAction(null)} className="flex-1 py-5 bg-gray-100 text-gray-400 rounded-[28px] font-black text-[10px] uppercase tracking-widest">Later</button>
+                              <button onClick={() => setPendingAction(null)} className="flex-1 py-5 bg-gray-100 text-gray-400 rounded-[28px] font-black text-[10px] uppercase tracking-widest">{t.aiChat.later || "Later"}</button>
                               <button 
                                   onClick={handleConfirmAction}
                                   className="flex-1 py-5 gradient-indigo text-white rounded-[28px] font-black text-[10px] uppercase tracking-widest shadow-2xl shadow-indigo-200 active:scale-95 transition-all"
                               >
-                                  Log Now ❤️
+                                  {t.aiChat.logNow || "Log Now ❤️"}
                               </button>
                           </div>
                       </div>
@@ -301,7 +313,7 @@ export default function AIChatView() {
         <input 
           type="text" value={input} onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={isListening ? "Listening with care..." : "Ask me anything..."}
+          placeholder={isListening ? (t.aiChat.listening || "Listening with care...") : (t.aiChat.askAnything || "Ask me anything...")}
           className="flex-1 bg-transparent border-none py-3 px-2 text-[15px] font-bold text-gray-800 placeholder-gray-300 outline-none"
         />
         <motion.button 

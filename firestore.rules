@@ -36,11 +36,11 @@ service cloud.firestore {
     }
 
     function isValidHabit(data) {
-      return data.keys().hasAll(['userId', 'type', 'value', 'timestamp']) &&
-             data.userId == request.auth.uid &&
+      return data.keys().hasAll(['type', 'value', 'timestamp']) &&
              data.type in ['water', 'meal', 'exercise', 'junk'] &&
              data.value is number &&
-             data.timestamp == request.time;
+             data.timestamp == request.time &&
+             (!data.keys().hasAny(['userId']) || data.userId == request.auth.uid);
     }
 
     function isValidFamily(data) {
@@ -59,6 +59,14 @@ service cloud.firestore {
              (!data.keys().hasAny(['batteryLevel']) || (data.batteryLevel is number && data.batteryLevel >= 0 && data.batteryLevel <= 100));
     }
 
+    function isValidAIInsight(data) {
+      return data.keys().hasAll(['category', 'content', 'isRead', 'timestamp']) &&
+             data.category in ['nutrition', 'activity', 'medical_alert', 'tip'] &&
+             data.content is string &&
+             data.isRead is bool &&
+             data.timestamp == request.time;
+    }
+
     // --- 5. THE MASTER GATE (DENY BY DEFAULT) ---
     match /{document=**} {
       allow read, write: if false;
@@ -70,7 +78,7 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isFamilyMember(userId) || isHealthWorker();
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isOwner(userId) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'familyId', 'onboarded', 'ageGroup']) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'familyId', 'onboarded', 'ageGroup', 'points']) &&
         incoming().role == existing().role // Immutable role via client
       ) || isSuperAdmin();
 
@@ -93,7 +101,10 @@ service cloud.firestore {
 
       match /ai_insights/{insightId} {
         allow list, get: if isOwner(userId);
-        allow write: if false; // System-only updates via backend
+        allow create: if isOwner(userId) && isValidAIInsight(incoming()) && isValidId(insightId);
+        allow update: if isOwner(userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'readAt'])
+        );
       }
     }
 

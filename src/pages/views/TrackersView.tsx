@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { translations } from "../../constants/translations";
-import { db } from "../../lib/firebase";
+import { db, handleFirestoreError, OperationType } from "../../lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, addDoc, serverTimestamp, limit } from "firebase/firestore";
 import { 
     LineChart, 
@@ -478,6 +478,7 @@ function WaterTracker() {
 
     useEffect(() => {
         if (!user) return;
+        const path = `users/${user.uid}/habits`;
         const q = query(
             collection(db, "users", user.uid, "habits"),
             where("type", "==", "water"),
@@ -486,12 +487,15 @@ function WaterTracker() {
         );
         return onSnapshot(q, (snap) => {
             setHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }, (error) => {
+            handleFirestoreError(error, OperationType.GET, path);
         });
     }, [user]);
 
     const addWater = async (val: number) => {
         if (!user || loading) return;
         setLoading(true);
+        const path = `users/${user.uid}/habits`;
         try {
             await addDoc(collection(db, "users", user.uid, "habits"), {
                 userId: user.uid,
@@ -500,7 +504,7 @@ function WaterTracker() {
                 timestamp: serverTimestamp()
             });
         } catch (e) {
-            console.error(e);
+            handleFirestoreError(e, OperationType.WRITE, path);
         } finally {
             setLoading(false);
         }

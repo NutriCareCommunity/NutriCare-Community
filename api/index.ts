@@ -1,4 +1,9 @@
 import express from "express";
+import usersRouter from "../lib/api/users";
+import nutritionRouter from "../lib/api/nutrition";
+import communityRouter from "../lib/api/community";
+import chatRouter from "../lib/api/chat";
+import portalRouter from "../lib/api/portal";
 
 const app = express();
 app.use(express.json());
@@ -13,7 +18,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 2. NGO/GOV AGGREGATION ENGINE
+// 2. NGO/GOV AGGREGATION ENGINE (Legacy Support Endpoint)
 app.get("/api/admin/regional-trends", async (req, res) => {
   try {
     const { district } = req.query;
@@ -41,7 +46,7 @@ app.get("/api/admin/regional-trends", async (req, res) => {
   }
 });
 
-// 3. BULK SURVEY INGESTION PIPELINE
+// 3. BULK SURVEY INGESTION PIPELINE (Legacy Support Endpoint)
 app.post("/api/ingest/survey", (req, res) => {
   const { batchId } = req.body;
   res.status(202).json({ 
@@ -50,4 +55,12 @@ app.post("/api/ingest/survey", (req, res) => {
   });
 });
 
+// 4. MOUNT MODULAR EXTENDED NUTRICARE MIDDLEWARE & ROUTERS
+app.use("/api", usersRouter);
+app.use("/api", nutritionRouter);
+app.use("/api", communityRouter);
+app.use("/api", chatRouter);
+app.use("/api", portalRouter);
+
 export default app;
+

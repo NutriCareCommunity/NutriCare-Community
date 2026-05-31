@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
-import { db } from "../lib/firebase";
+import { db, handleFirestoreError, OperationType } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { translations } from "../constants/translations";
@@ -47,6 +47,7 @@ export default function Onboarding() {
   const handleFinish = async () => {
     if (!user) return;
     setLoading(true);
+    const path = `users/${user.uid}`;
     try {
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
@@ -60,7 +61,7 @@ export default function Onboarding() {
       });
       await refreshProfile();
     } catch (err) {
-      console.error("Onboarding failed:", err);
+      handleFirestoreError(err, OperationType.CREATE, path);
     } finally {
       setLoading(false);
     }
