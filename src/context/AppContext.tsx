@@ -93,12 +93,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchFamily = async (uid: string) => {
     // In a real app we'd query a family subcollection or joint table
-    // For now, we simulate with some intelligent logic based on profile type
-    const mockFamily = [
-      { id: "f1", name: "Parents", icon: "👨‍🦳", status: "Healthy" },
-      { id: "f2", name: "Child", icon: "👶", status: "Needs Iron" }
-    ];
-    setFamilyMembers(mockFamily);
+    // BUG 4: Fallbacks should only be shown in development mode
+    if (import.meta.env.DEV) {
+      const mockFamily = [
+        { id: "f1", name: "Parents", icon: "👨‍🦳", status: "Healthy" },
+        { id: "f2", name: "Child", icon: "👶", status: "Needs Iron" }
+      ];
+      setFamilyMembers(mockFamily);
+    } else {
+      setFamilyMembers([]);
+    }
   };
 
   const fetchDevices = async (uid: string) => {
@@ -109,10 +113,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const devList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
       if (devList.length === 0) {
-        setDevices([
-          { id: "d1", deviceName: "SmartWatch Pro", deviceType: "Watch", status: "connected", batteryLevel: 85, lastSync: "2 min ago" },
-          { id: "d2", deviceName: "Family Scale", deviceType: "Scale", status: "connected", batteryLevel: 42, lastSync: "1h ago" }
-        ]);
+        // BUG 4: Fallbacks should only be shown in development mode
+        if (import.meta.env.DEV) {
+          setDevices([
+            { id: "d1", deviceName: "SmartWatch Pro", deviceType: "Watch", status: "connected", batteryLevel: 85, lastSync: "2 min ago" },
+            { id: "d2", deviceName: "Family Scale", deviceType: "Scale", status: "connected", batteryLevel: 42, lastSync: "1h ago" }
+          ]);
+        } else {
+          setDevices([]);
+        }
       } else {
         setDevices(devList);
       }

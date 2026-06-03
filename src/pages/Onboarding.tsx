@@ -51,13 +51,17 @@ export default function Onboarding() {
     try {
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
+        email: user.email || "",
+        displayName: user.displayName || user.email?.split("@")[0] || "Anonymous",
         language,
         ageGroup,
         onboarded: true,
         role,
+        region: "Unspecified",
+        nutriScore: 50,
+        points: 0,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       await refreshProfile();
     } catch (err) {

@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { z } from "zod";
-import { adminDb } from "../firebase-admin";
+import { adminDb, admin } from "../firebase-admin";
 import { authMiddleware, AuthenticatedRequest } from "../auth-middleware";
 
 const router = Router();
@@ -17,29 +17,37 @@ const createCommentSchema = z.object({
 });
 
 /**
- * 1. GET /api/community/posts - Paginated feed (limit, cursor)
+ * 1. GET /api/community/posts - Paginated feed (with standard DocumentSnapshot cursor: BUG 9)
  */
 router.get("/community/posts", authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const limitVal = parseInt(req.query.limit as string) || 10;
-    const cursor = req.query.cursor as string; // Expecting ISO timestamp raw string
+    const cursor = req.query.cursor as string; // Expecting Document ID as cursor (BUG 9)
+    const userId = req.user!.uid;
 
     let postsQuery = adminDb.collection("posts")
       .orderBy("createdAt", "desc")
       .limit(limitVal);
 
     if (cursor) {
-      postsQuery = postsQuery.startAfter(cursor);
+      const cursorDoc = await adminDb.collection("posts").doc(cursor).get();
+      if (cursorDoc.exists) {
+        postsQuery = postsQuery.startAfter(cursorDoc);
+      }
     }
 
     const snapshot = await postsQuery.get();
     
-    // Fetch comments count for each post concurrently
+    // Process matching post fields, concurrent checks for liked status and comments
     const postsPromises = snapshot.docs.map(async (doc) => {
       const postData = doc.data();
       
-      // Get comments count from subcollection
+      // Get comment count
       const commentsSnapshot = await doc.ref.collection("comments").get();
+      
+      // Get whether current user liked the post from the likes subcollection (BUG 8 pattern)
+      const userLikeRef = doc.ref.collection("likes").doc(userId);
+      const userLikeDoc = await userLikeRef.get();
       
       return {
         id: doc.id,
@@ -48,42 +56,42 @@ router.get("/community/posts", authMiddleware, async (req: AuthenticatedRequest,
         tags: postData.tags || [],
         authorId: postData.authorId,
         authorName: postData.authorName || "Community Member",
-        authorRole: postData.authorRole || "Member",
-        likes: postData.likes || [],
-        likesCount: (postData.likes || []).length,
+        authorRole: postData.authorRole || "user",
+        likesCount: postData.likesCount || 0,
+        isLiked: userLikeDoc.exists,
         commentsCount: commentsSnapshot.size,
-        createdAt: postData.createdAt,
+        createdAt: postData.createdAt instanceof admin.firestore.Timestamp ? postData.createdAt.toDate().toISOString() : postData.createdAt,
       };
     });
 
     const posts = await Promise.all(postsPromises);
 
-    // Fallback static starter feeds so the app is immediately alive and gorgeous
-    if (posts.length === 0 && !cursor) {
+    // BUG 4 Fix: Fallback only in development when table is totally empty
+    if (posts.length === 0 && !cursor && process.env.NODE_ENV !== "production") {
       const fallbackPosts = [
         {
           id: "post_initial_1",
-          text: "Harvested fresh Moranga (Drumstick) leaves today for dinner. Super rich in iron and vitamin A! Adding this to our traditional dal recipe. 🌿🍲",
+          text: "Harvested fresh Drumstick (Moringa) leaves today. Super rich in iron and vitamin A! Adding this to dal. 🌿🍲",
           images: [],
           tags: ["IronWellness", "TraditionalGreens", "HealthyEating"],
           authorId: "system_anchor_worker_1",
           authorName: "Asha Devi",
-          authorRole: "Health Worker",
-          likes: ["user_curator_2"],
+          authorRole: "health_worker",
           likesCount: 1,
+          isLiked: true,
           commentsCount: 2,
           createdAt: new Date(Date.now() - 3600000).toISOString()
         },
         {
           id: "post_initial_2",
-          text: "Millet Porridge (Ragi Sankati) is a fantastic breakfast upgrade for growing kids! Packed with calcium, fiber, and extremely low cost. Try this with curd or buttermilk.",
+          text: "Ragi Sankati is a fantastic breakfast upgrade for kids. Fun, easy to digest and extremely affordable. Try with curd!",
           images: [],
           tags: ["Millets", "ChildNutrition", "Superfoods"],
           authorId: "system_anchor_ngo_1",
           authorName: "Aarohan Foundations",
-          authorRole: "NGO/Academy Partner",
-          likes: [],
+          authorRole: "ngo_admin",
           likesCount: 0,
+          isLiked: false,
           commentsCount: 0,
           createdAt: new Date(Date.now() - 7200000).toISOString()
         }
@@ -94,11 +102,11 @@ router.get("/community/posts", authMiddleware, async (req: AuthenticatedRequest,
     return res.json({
       success: true,
       data: posts,
-      nextCursor: posts.length === limitVal ? posts[posts.length - 1].createdAt : null,
+      nextCursor: posts.length === limitVal ? posts[posts.length - 1].id : null, // Document ID cursor (BUG 9)
     });
   } catch (err: any) {
     console.error("Error fetching community posts:", err);
-    return res.status(500).json({ success: false, error: "Internal server error fetching community feed" });
+    return res.status(500).json({ success: false, error: err.message || "Internal server error fetching community feed" });
   }
 });
 
@@ -124,15 +132,14 @@ router.post("/community/posts", authMiddleware, async (req: AuthenticatedRequest
 
     const postRef = adminDb.collection("posts").doc();
     const postData = {
-      id: postRef.id,
       text,
       images,
       tags,
       authorId,
       authorName,
       authorRole,
-      likes: [], // Store standard likedBy UIDs array
-      createdAt: new Date().toISOString(),
+      likesCount: 0, // Standalone integer field updated atomically (BUG 8)
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     await postRef.set(postData);
@@ -140,19 +147,21 @@ router.post("/community/posts", authMiddleware, async (req: AuthenticatedRequest
     return res.status(201).json({
       success: true,
       data: {
+        id: postRef.id,
         ...postData,
-        likesCount: 0,
-        commentsCount: 0
+        createdAt: new Date().toISOString(),
+        commentsCount: 0,
+        isLiked: false
       }
     });
   } catch (err: any) {
     console.error("Error creating community post:", err);
-    return res.status(500).json({ success: false, error: "Internal server error creating post" });
+    return res.status(500).json({ success: false, error: err.message || "Internal server error creating post" });
   }
 });
 
 /**
- * 3. POST /api/community/posts/:id/like - Toggle like on post
+ * 3. POST /api/community/posts/:id/like - Toggle like on post using transaction for infinite scale (BUG 8)
  */
 router.post("/community/posts/:id/like", authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -160,41 +169,44 @@ router.post("/community/posts/:id/like", authMiddleware, async (req: Authenticat
     const userId = req.user!.uid;
 
     const postRef = adminDb.collection("posts").doc(postId);
-    const postDoc = await postRef.get();
+    const likeRef = postRef.collection("likes").doc(userId); // Subdocument per like (BUG 8 pattern)
 
-    if (!postDoc.exists) {
-      return res.status(404).json({ success: false, error: "Post not found" });
-    }
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const postDoc = await transaction.get(postRef);
+      if (!postDoc.exists) {
+        throw new Error("Post not found");
+      }
 
-    const postData = postDoc.data()!;
-    const likesList: string[] = postData.likes || [];
-    
-    let updatedLikes: string[];
-    let isLiked: boolean;
+      const likeDoc = await transaction.get(likeRef);
+      const isLiked = likeDoc.exists;
+      const currentLikesCount = postDoc.data()?.likesCount || 0;
 
-    if (likesList.includes(userId)) {
-      // Remove like
-      updatedLikes = likesList.filter(id => id !== userId);
-      isLiked = false;
-    } else {
-      // Add like
-      updatedLikes = [...likesList, userId];
-      isLiked = true;
-    }
-
-    await postRef.update({ likes: updatedLikes });
+      if (isLiked) {
+        // Remove like doc and decrement count atomically
+        transaction.delete(likeRef);
+        const nextCount = Math.max(0, currentLikesCount - 1);
+        transaction.update(postRef, { likesCount: nextCount });
+        return { isLiked: false, likesCount: nextCount };
+      } else {
+        // Add like doc and increment count atomically
+        transaction.set(likeRef, { likedAt: admin.firestore.FieldValue.serverTimestamp() });
+        const nextCount = currentLikesCount + 1;
+        transaction.update(postRef, { likesCount: nextCount });
+        return { isLiked: true, likesCount: nextCount };
+      }
+    });
 
     return res.json({
       success: true,
       data: {
         postId,
-        isLiked,
-        likesCount: updatedLikes.length
+        isLiked: result.isLiked,
+        likesCount: result.likesCount
       }
     });
   } catch (err: any) {
     console.error("Error toggling post like:", err);
-    return res.status(500).json({ success: false, error: "Internal server error toggling liking activity" });
+    return res.status(500).json({ success: false, error: err.message || "Internal server error toggling liking activity" });
   }
 });
 
@@ -230,24 +242,27 @@ router.post("/community/posts/:id/comments", authMiddleware, async (req: Authent
     // Add comment to comments subcollection
     const commentRef = postRef.collection("comments").doc();
     const commentData = {
-      id: commentRef.id,
-      postId,
       userId,
       authorName,
       authorRole,
       text,
-      createdAt: new Date().toISOString(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     await commentRef.set(commentData);
 
     return res.status(201).json({
       success: true,
-      data: commentData
+      data: {
+        id: commentRef.id,
+        postId,
+        ...commentData,
+        createdAt: new Date().toISOString()
+      }
     });
   } catch (err: any) {
     console.error("Error posting comment on post:", err);
-    return res.status(500).json({ success: false, error: "Internal server error posting comment" });
+    return res.status(500).json({ success: false, error: err.message || "Internal server error posting comment" });
   }
 });
 
@@ -265,7 +280,14 @@ router.get("/community/posts/:id/comments", authMiddleware, async (req: Authenti
     }
 
     const snapshot = await postRef.collection("comments").orderBy("createdAt", "asc").get();
-    const comments = snapshot.docs.map(doc => doc.data());
+    const comments = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt instanceof admin.firestore.Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt
+      };
+    });
 
     return res.json({
       success: true,

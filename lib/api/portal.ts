@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { z } from "zod";
-import { adminDb } from "../firebase-admin";
+import { adminDb, admin } from "../firebase-admin";
 import { authMiddleware, requireRole, AuthenticatedRequest } from "../auth-middleware";
 
 const router = Router();
@@ -14,12 +14,12 @@ const createProgramSchema = z.object({
 });
 
 /**
- * 1. GET /api/portal/reports - Fetch aggregated health reports by region
+ * 1. GET /api/portal/reports - Fetch aggregated health reports by region (standardized roles: BUG 2)
  */
 router.get(
   "/portal/reports",
   authMiddleware,
-  requireRole(["NGO/Academy Partner", "Admin"]),
+  requireRole(["ngo_admin", "admin"]),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Aggregate data across registrations to map region demographic vulnerability indicators
@@ -48,11 +48,11 @@ router.get(
           };
         }
 
-        if (role === "Community Member") {
+        if (role === "user" || role === "parent") {
           regionDistribution[region].communityMemberCount += 1;
           regionDistribution[region].avgNutriScoreSum += nutriScore;
           regionDistribution[region].userWithScoreCount += 1;
-        } else if (role === "Health Worker") {
+        } else if (role === "health_worker") {
           regionDistribution[region].healthWorkerCount += 1;
         }
       });
@@ -86,8 +86,8 @@ router.get(
         };
       });
 
-      // Default analytics fallback report cards
-      if (reportCards.length === 0) {
+      // BUG 4 Fix: Wrap fallbacks in node environment check
+      if (reportCards.length === 0 && process.env.NODE_ENV !== "production") {
         reportCards.push(
           {
             region: "Nalgonda_North",
@@ -125,7 +125,7 @@ router.get(
       });
     } catch (err: any) {
       console.error("Error creating portal regional report:", err);
-      return res.status(500).json({ success: false, error: "Internal server error creating NGO diagnostics reports" });
+      return res.status(500).json({ success: false, error: err.message || "Internal server error creating NGO diagnostics reports" });
     }
   }
 );
@@ -136,7 +136,7 @@ router.get(
 router.post(
   "/portal/programs",
   authMiddleware,
-  requireRole(["NGO/Academy Partner", "Admin"]),
+  requireRole(["ngo_admin", "admin"]),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const rawBody = req.body;
@@ -154,24 +154,27 @@ router.post(
 
       const programRef = adminDb.collection("programs").doc();
       const programData = {
-        id: programRef.id,
         name,
         description,
         targetRegion,
         goals,
         createdBy,
-        createdAt: new Date().toISOString(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
       await programRef.set(programData);
 
       return res.status(201).json({
         success: true,
-        data: programData
+        data: {
+          id: programRef.id,
+          ...programData,
+          createdAt: new Date().toISOString()
+        }
       });
     } catch (err: any) {
       console.error("Error creating nutrition program:", err);
-      return res.status(500).json({ success: false, error: "Internal server error creating active program campaign" });
+      return res.status(500).json({ success: false, error: err.message || "Internal server error creating active program campaign" });
     }
   }
 );
@@ -182,7 +185,7 @@ router.post(
 router.get(
   "/portal/programs",
   authMiddleware,
-  requireRole(["NGO/Academy Partner", "Admin", "Health Worker", "Community Member"]),
+  requireRole(["ngo_admin", "admin", "health_worker", "user", "parent"]),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const filterRegion = req.query.region as string;
@@ -193,10 +196,17 @@ router.get(
       }
 
       const snapshot = await queryRef.get();
-      const programs = snapshot.docs.map(doc => doc.data());
+      const programs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt instanceof admin.firestore.Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt
+        };
+      });
 
-      // Fallback fallback program data if database list is empty
-      if (programs.length === 0) {
+      // BUG 4 Fix: Wrap fallbacks in node environment check
+      if (programs.length === 0 && process.env.NODE_ENV !== "production") {
         const fallbackPrograms = [
           {
             id: "program_fallback_1",
@@ -233,7 +243,7 @@ router.get(
       });
     } catch (err: any) {
       console.error("Error listing programs:", err);
-      return res.status(500).json({ success: false, error: "Internal server error fetching program campaigns list" });
+      return res.status(500).json({ success: false, error: err.message || "Internal server error fetching program campaigns list" });
     }
   }
 );

@@ -1,7 +1,10 @@
-import * as admin from "firebase-admin";
+import * as adminNamespace from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import fs from "fs";
 import path from "path";
+
+// Resolve actual admin object supporting both ES modules default and namespace exports
+const adminInstance: any = (adminNamespace as any).default || adminNamespace;
 
 // Load local Firebase Applet config for development fallbacks
 let firebaseConfig: any = {};
@@ -15,34 +18,57 @@ try {
 }
 
 const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-let initializedApp: admin.app.App | null = null;
+// Safe, extensive formatting of the private key to handle any escaping/wrapping from environment variables
+const getFormattedPrivateKey = (key: string | undefined): string | undefined => {
+  if (!key) return undefined;
+  let formatted = key.trim();
+  
+  // Strip outer quotes if the environment wrapper preserved them
+  if (formatted.startsWith('"') && formatted.endsWith('"')) {
+    formatted = formatted.slice(1, -1).trim();
+  }
+  if (formatted.startsWith("'") && formatted.endsWith("'")) {
+    formatted = formatted.slice(1, -1).trim();
+  }
+  
+  // Unescape both double-escaped and single-escaped newlines to true carriage returns
+  formatted = formatted.replace(/\\n/g, "\n");
+  formatted = formatted.replace(/\\r/g, "\r");
+  
+  return formatted;
+};
+
+const privateKey = getFormattedPrivateKey(rawPrivateKey);
+
+let initializedApp: adminNamespace.app.App | null = null;
 let initError: any = null;
 
-function getApp(): admin.app.App {
+function getApp(): adminNamespace.app.App {
   if (initializedApp) return initializedApp;
   if (initError) throw initError;
 
   try {
-    if (admin.apps.length > 0) {
-      initializedApp = admin.apps[0]!;
+    const apps = adminInstance.apps;
+    if (apps && apps.length > 0) {
+      initializedApp = apps[0]!;
       return initializedApp;
     }
 
     if (privateKey && clientEmail) {
-      initializedApp = admin.initializeApp({
-        credential: admin.credential.cert({
+      initializedApp = adminInstance.initializeApp({
+        credential: adminInstance.credential.cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, "\n"),
+          privateKey,
         }),
       });
       console.log("Firebase Admin initialized with custom Service Account credentials.");
     } else if (projectId) {
       // Application Default Credentials or standard local CLI configuration
-      initializedApp = admin.initializeApp({
+      initializedApp = adminInstance.initializeApp({
         projectId,
       });
       console.log(`Firebase Admin initialized via credentials for project: ${projectId}`);
@@ -112,4 +138,4 @@ export const adminAuth = new Proxy({} as any, {
   }
 });
 
-export { admin };
+export { adminInstance as admin };

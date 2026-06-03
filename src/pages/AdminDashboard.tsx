@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { auth } from "../lib/firebase";
 import { 
   BarChart, 
   Bar, 
@@ -61,7 +62,10 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/regional-trends");
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch("/api/admin/regional-trends", {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
       if (!response.ok) {
         throw new Error("Unable to contact live region trends aggregator");
       }

@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { z } from "zod";
 import { ai } from "../gemini";
 import { authMiddleware, AuthenticatedRequest } from "../auth-middleware";
+import { checkRateLimit } from "../rate-limit";
 
 const router = Router();
 
@@ -15,39 +16,28 @@ const chatRequestSchema = z.object({
   ).min(1),
 });
 
-// Simple In-Memory Rate Limiting: max 20 requests/min per user
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-function rateLimiter(req: AuthenticatedRequest, res: Response, next: any) {
+// Firestore-backed Rate Limiter (BUG 3 Fix - prevents state reset in serverless cold starts)
+async function rateLimiter(req: AuthenticatedRequest, res: Response, next: any) {
   const userId = req.user?.uid;
   if (!userId) {
     return res.status(401).json({ success: false, error: "Authentication required for rate determination" });
   }
 
-  const now = Date.now();
-  const limitWindowMs = 60 * 1000; // 1 minute
-  const maxRequests = 20;
+  try {
+    const { allowed } = await checkRateLimit(userId, 20, 60000);
 
-  const record = rateLimitStore.get(userId);
+    if (!allowed) {
+      return res.status(429).json({
+        success: false,
+        error: "Rate Limit Exceeded: You've made too many requests. Max 20 inquiries per minute on AI Chat. Please pause."
+      });
+    }
 
-  if (!record || now > record.resetTime) {
-    // Initialize or reset limit
-    rateLimitStore.set(userId, {
-      count: 1,
-      resetTime: now + limitWindowMs,
-    });
-    return next();
+    next();
+  } catch (err) {
+    console.error("Rate limit check failed, preceding gracefully:", err);
+    next();
   }
-
-  if (record.count >= maxRequests) {
-    return res.status(429).json({
-      success: false,
-      error: "Rate Limit Exceeded: You've made too many requests. Max 20 inquiries per minute on AI Chat. Please pause."
-    });
-  }
-
-  record.count += 1;
-  next();
 }
 
 /**
@@ -84,7 +74,7 @@ router.post("/chat", authMiddleware, rateLimiter, async (req: AuthenticatedReque
       "Give practical, evidence-based advice on nutrition, healthy eating, and wellness. " +
       "Always recommend consulting a health professional for medical issues.";
 
-    // Invoke Gemini Streaming Content Generation
+    // Invoke Gemini Streaming Content Generation using standard modern SDK
     const stream = await ai.models.generateContentStream({
       model: "gemini-3.5-flash",
       contents: formattedContents,

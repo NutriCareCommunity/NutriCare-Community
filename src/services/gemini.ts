@@ -2,17 +2,30 @@
  * SECURE CLIENT PROXY FOR NUTRICARE COMMUNITY Backend
  * Proxies calls to `/api/gemini/*` endpoints to keep the API key on the server.
  */
+import { auth } from "../lib/firebase";
 
-export const getNuitritionAdvice = async (query: string, language: string, context?: any) => {
+const getHeaders = async () => {
+  const token = await auth.currentUser?.getIdToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+  };
+};
+
+export const getNutritionAdvice = async (query: string, language: string, context?: any) => {
   const result = await processChat(query, language, context);
   return result.text;
 };
 
+// Also keep original spelled function to prevent any import breakage
+export const getNuitritionAdvice = getNutritionAdvice;
+
 export const processChat = async (query: string, language: string, context?: any) => {
   try {
+    const headers = await getHeaders();
     const response = await fetch("/api/gemini/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ query, language, context }),
     });
     if (!response.ok) {
@@ -31,9 +44,10 @@ export const processChat = async (query: string, language: string, context?: any
 
 export const getExplainedSimply = async (textToSimplify: string, language: string) => {
   try {
+    const headers = await getHeaders();
     const response = await fetch("/api/gemini/simplify", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ textToSimplify, language }),
     });
     if (!response.ok) {
@@ -49,9 +63,10 @@ export const getExplainedSimply = async (textToSimplify: string, language: strin
 
 export const getMealPlan = async (language: string, budget: number, healthGoal: string, appMode: string) => {
   try {
+    const headers = await getHeaders();
     const response = await fetch("/api/gemini/meal-plan", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ language, budget, healthGoal, appMode }),
     });
     if (!response.ok) {

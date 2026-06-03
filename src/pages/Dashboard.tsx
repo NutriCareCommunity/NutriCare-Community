@@ -10,9 +10,7 @@ import {
   Globe,
   Bell,
   Settings,
-  Mic,
   X,
-  Speaker,
   ShieldCheck,
   ChevronRight,
   Plus,
@@ -30,7 +28,6 @@ import { auth } from "../lib/firebase";
 export default function Dashboard() {
   const { language, profile, appMode, activeTab, setActiveTab } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [nudges, setNudges] = useState<HealthNudge[]>([]);
   const t = translations[language] || translations.en;
 
@@ -161,41 +158,6 @@ export default function Dashboard() {
             </AnimatePresence>
         </div>
       </main>
-
-      {/* Voice Assistant Floating Mic */}
-      <div className="fixed bottom-28 right-6 z-50">
-        <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setIsListening(!isListening)}
-            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all relative overflow-hidden group ${isListening ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white' : 'bg-slate-800 border-4 border-slate-900'}`}
-        >
-            {isListening && (
-                <motion.div 
-                    animate={{ scale: [1, 2, 1], opacity: [0.3, 0.1, 0.3] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="absolute inset-0 bg-white"
-                />
-            )}
-            <Mic className={`w-8 h-8 ${isListening ? 'text-white' : 'text-slate-200'}`} />
-            {isListening && <motion.div className="absolute inset-0 border-4 border-white/20 rounded-full animate-ping" />}
-        </motion.button>
-        <AnimatePresence>
-            {isListening && (
-                <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="absolute right-20 top-0 bottom-0 flex items-center pr-4"
-                >
-                    <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-800 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
-                        <Speaker className="w-4 h-4 text-rose-400 animate-bounce" />
-                        <span className="text-xs font-black text-white uppercase tracking-widest whitespace-nowrap">Listening...</span>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-      </div>
 
       {/* Premium Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F172A]/90 backdrop-blur-3xl border-t border-slate-800/80 flex flex-col justify-center px-4 z-40 nav-shadow">

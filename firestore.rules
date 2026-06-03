@@ -9,62 +9,110 @@ service cloud.firestore {
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     
-    // --- 2. TIERED IDENTITY LOGIC (RBAC) ---
-    // Roles: user, parent, health_worker, ngo_admin, gov_admin, super_admin
+    // --- 2. MULTI-ROLE SYSTEM (user, parent, health_worker, ngo_admin, admin) ---
     function getUserData() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function getRole() { return getUserData().role; }
     
-    function isSuperAdmin() { return isSignedIn() && getRole() == 'super_admin'; }
-    function isGovAdmin() { return isSignedIn() && (getRole() == 'gov_admin' || isSuperAdmin()); }
-    function isNGOAdmin() { return isSignedIn() && (getRole() == 'ngo_admin' || isGovAdmin()); }
-    function isHealthWorker() { return isSignedIn() && (getRole() == 'health_worker' || isNGOAdmin()); }
+    function isAdmin() { return isSignedIn() && getRole() == 'admin'; }
+    function isNgoAdmin() { return isSignedIn() && (getRole() == 'ngo_admin' || getRole() == 'admin'); }
+    function isHealthWorker() { return isSignedIn() && (getRole() == 'health_worker' || getRole() == 'ngo_admin' || getRole() == 'admin'); }
     
-    // --- 3. FAMILY LOGIC ---
-    function isFamilyMember(ownerUid) {
-      let ownerFamily = get(/databases/$(database)/documents/users/$(ownerUid)).data.familyId;
-      let myFamily = getUserData().familyId;
-      return isSignedIn() && ownerFamily != null && ownerFamily == myFamily;
+    // --- 3. FAMILY CIRCLE VERIFICATION ---
+    function isFamilyMember(targetUid) {
+      let myFamilyId = getUserData().familyId;
+      let targetFamilyId = get(/databases/$(database)/documents/users/$(targetUid)).data.familyId;
+      return isSignedIn() && myFamilyId != null && myFamilyId == targetFamilyId;
     }
 
-    // --- 4. VALIDATION BLUEPRINTS ---
+    // --- 4. DATA VALIDATION PRIMITIVES ---
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'language', 'onboarded', 'role']) &&
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'ageGroup', 'language', 'region', 'nutriScore', 'onboarded', 'createdAt', 'updatedAt']) &&
+             data.keys().size() >= 11 && data.keys().size() <= 13 &&
              data.uid == request.auth.uid &&
-             data.role in ['user', 'parent', 'health_worker'] && // Only self-register as user, parent, or health_worker
-             data.language is string &&
-             data.onboarded is bool;
+             data.email is string && data.email.size() <= 200 &&
+             data.displayName is string && data.displayName.size() <= 200 &&
+             data.role in ['user', 'parent', 'health_worker'] && // users can only self-register non-privileged roles
+             data.ageGroup in ['child', 'teen', 'adult', 'elderly', 'pregnant'] &&
+             data.language in ['en', 'te', 'hi', 'ta', 'kn'] &&
+             data.region is string && data.region.size() <= 100 &&
+             data.nutriScore is int && data.nutriScore >= 0 && data.nutriScore <= 100 &&
+             data.onboarded is bool &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time &&
+             (!data.keys().hasAny(['familyId']) || (data.familyId is string && data.familyId.size() <= 100)) &&
+             (!data.keys().hasAny(['points']) || (data.points is int && data.points >= 0));
     }
 
     function isValidHabit(data) {
       return data.keys().hasAll(['type', 'value', 'timestamp']) &&
-             data.type in ['water', 'meal', 'exercise', 'junk'] &&
+             data.keys().size() <= 8 &&
+             data.type in ['water', 'meal', 'exercise', 'junk', 'symptom'] &&
              data.value is number &&
              data.timestamp == request.time &&
-             (!data.keys().hasAny(['userId']) || data.userId == request.auth.uid);
+             (!data.keys().hasAny(['description']) || (data.description is string && data.description.size() <= 300));
     }
 
-    function isValidFamily(data) {
-      return data.keys().hasAll(['adminId', 'members']) &&
-             data.adminId == request.auth.uid &&
-             data.members is list &&
-             data.members.size() <= 20; // Bound lists
+    function isValidGrowth(data) {
+      return data.keys().hasAll(['timestamp']) &&
+             (data.keys().size() == 1 || data.keys().size() <= 4) &&
+             data.timestamp == request.time &&
+             (!data.keys().hasAny(['height']) || (data.height is number && data.height >= 0 && data.height <= 300)) &&
+             (!data.keys().hasAny(['weight']) || (data.weight is number && data.weight >= 0 && data.weight <= 500)) &&
+             (!data.keys().hasAny(['muac']) || (data.muac is number && data.muac >= 0 && data.muac <= 100));
     }
 
     function isValidDevice(data) {
-      return data.keys().hasAll(['userId', 'deviceName', 'deviceType', 'status']) &&
-             data.userId == request.auth.uid &&
-             data.deviceName is string && data.deviceName.size() <= 200 &&
+      return data.keys().hasAll(['deviceName', 'deviceType', 'status', 'lastSync']) &&
+             (data.keys().size() == 4 || (data.keys().size() == 5 && data.keys().hasAny(['batteryLevel']))) &&
+             data.deviceName is string && data.deviceName.size() <= 100 &&
              data.deviceType in ['Watch', 'Scale', 'BP Monitor', 'Glucose Meter'] &&
              data.status in ['connected', 'disconnected', 'syncing'] &&
-             (!data.keys().hasAny(['batteryLevel']) || (data.batteryLevel is number && data.batteryLevel >= 0 && data.batteryLevel <= 100));
+             data.lastSync == request.time &&
+             (!data.keys().hasAny(['batteryLevel']) || (data.batteryLevel is int && data.batteryLevel >= 0 && data.batteryLevel <= 100));
     }
 
-    function isValidAIInsight(data) {
-      return data.keys().hasAll(['category', 'content', 'isRead', 'timestamp']) &&
-             data.category in ['nutrition', 'activity', 'medical_alert', 'tip'] &&
-             data.content is string &&
-             data.isRead is bool &&
-             data.timestamp == request.time;
+    function isValidNutritionLog(data) {
+      return data.keys().hasAll(['userId', 'date', 'foods', 'calories', 'nutrients', 'mealType', 'loggedBy', 'createdAt']) &&
+             data.keys().size() == 8 &&
+             data.userId is string &&
+             data.date is string && data.date.size() == 10 &&
+             data.foods is list && data.foods.size() <= 50 &&
+             data.calories is number && data.calories >= 0 && data.calories <= 10000 &&
+             data.nutrients is map &&
+             data.mealType in ['breakfast', 'lunch', 'dinner', 'snack'] &&
+             data.loggedBy == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['text', 'images', 'tags', 'authorId', 'authorName', 'authorRole', 'likesCount', 'createdAt']) &&
+             data.keys().size() == 8 &&
+             data.text is string && data.text.size() <= 2000 &&
+             data.images is list && data.images.size() <= 5 &&
+             data.tags is list && data.tags.size() <= 10 &&
+             data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() <= 200 &&
+             data.authorRole is string &&
+             data.likesCount == 0 &&
+             data.createdAt == request.time;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['userId', 'authorName', 'text', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.userId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() <= 200 &&
+             data.text is string && data.text.size() <= 1000 &&
+             data.createdAt == request.time;
+    }
+
+    function isValidFamily(data) {
+      return data.keys().hasAll(['adminId', 'members', 'name', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.adminId == request.auth.uid &&
+             data.members is list && data.members.size() <= 20 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.createdAt == request.time;
     }
 
     // --- 5. THE MASTER GATE (DENY BY DEFAULT) ---
@@ -72,25 +120,36 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- 6. COLLECTION HARDENING ---
+    // --- 6. SECURED COLLECTIONS MATCH BLOCKS ---
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isFamilyMember(userId) || isHealthWorker();
-      allow create: if isOwner(userId) && isValidUser(incoming());
-      allow update: if isOwner(userId) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'familyId', 'onboarded', 'ageGroup', 'points']) &&
-        incoming().role == existing().role // Immutable role via client
-      ) || isSuperAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && isValidId(userId);
+      allow update: if (isOwner(userId) && (
+        incoming().uid == existing().uid &&
+        incoming().email == existing().email &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().role == existing().role && // Prevent client role self-escalation
+        incoming().displayName is string && incoming().displayName.size() <= 200 &&
+        incoming().language in ['en', 'te', 'hi', 'ta', 'kn'] &&
+        incoming().region is string && incoming().region.size() <= 100 &&
+        incoming().ageGroup in ['child', 'teen', 'adult', 'elderly', 'pregnant'] &&
+        incoming().nutriScore is int && incoming().nutriScore >= 0 && incoming().nutriScore <= 100 &&
+        incoming().onboarded is bool &&
+        (!incoming().keys().hasAny(['familyId']) || (incoming().familyId is string && incoming().familyId.size() <= 100)) &&
+        (!incoming().keys().hasAny(['points']) || (incoming().points is int && incoming().points >= 0))
+      )) || isAdmin();
 
       match /habits/{habitId} {
-        allow list, get: if isOwner(userId) || isFamilyMember(userId);
+        allow list, get: if isOwner(userId) || isFamilyMember(userId) || isHealthWorker();
         allow create: if isOwner(userId) && isValidHabit(incoming()) && isValidId(habitId);
         allow delete: if isOwner(userId);
       }
 
       match /growth/{recordId} {
         allow list, get: if isOwner(userId) || isFamilyMember(userId) || isHealthWorker();
-        allow create: if (isOwner(userId) || isFamilyMember(userId)) && isValidId(recordId);
+        allow create: if (isOwner(userId) || isFamilyMember(userId) || isHealthWorker()) && isValidGrowth(incoming()) && isValidId(recordId);
       }
 
       match /devices/{deviceId} {
@@ -101,35 +160,64 @@ service cloud.firestore {
 
       match /ai_insights/{insightId} {
         allow list, get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidAIInsight(incoming()) && isValidId(insightId);
-        allow update: if isOwner(userId) && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'readAt'])
-        );
+        // System-only writes via Admin SDK; client SDK block is default deny.
+      }
+    }
+
+    match /nutrition_logs/{logId} {
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isFamilyMember(resource.data.userId) || isHealthWorker());
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isFamilyMember(resource.data.userId) || isHealthWorker());
+      allow create: if isSignedIn() && (incoming().userId == request.auth.uid || isFamilyMember(incoming().userId) || isHealthWorker()) && isValidNutritionLog(incoming()) && isValidId(logId);
+    }
+
+    match /posts/{postId} {
+      allow list, get: if isSignedIn();
+      allow create: if isSignedIn() && isValidPost(incoming()) && isValidId(postId);
+      allow update: if isSignedIn() && (
+        incoming().text == existing().text &&
+        incoming().images == existing().images &&
+        incoming().tags == existing().tags &&
+        incoming().authorId == existing().authorId &&
+        incoming().authorName == existing().authorName &&
+        incoming().authorRole == existing().authorRole &&
+        incoming().createdAt == existing().createdAt &&
+        (incoming().likesCount == existing().likesCount || incoming().likesCount == existing().likesCount + 1 || incoming().likesCount == existing().likesCount - 1)
+      );
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isAdmin());
+
+      match /likes/{userId} {
+        allow list, get: if isSignedIn();
+        allow create: if isSignedIn() && isOwner(userId) && incoming().likedAt == request.time && isValidId(userId);
+        allow delete: if isSignedIn() && isOwner(userId);
+      }
+
+      match /comments/{commentId} {
+        allow list, get: if isSignedIn();
+        allow create: if isSignedIn() && isValidComment(incoming()) && isValidId(commentId);
+        allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
       }
     }
 
     match /families/{familyId} {
       allow get: if isSignedIn() && (existing().members.hasAny([request.auth.uid]) || isHealthWorker());
-      allow create: if isSignedIn() && isValidFamily(incoming());
-      allow update: if isSignedIn() && existing().adminId == request.auth.uid;
+      allow create: if isSignedIn() && isValidFamily(incoming()) && isValidId(familyId);
+      allow update: if isSignedIn() && existing().adminId == request.auth.uid && incoming().adminId == existing().adminId && incoming().createdAt == existing().createdAt && incoming().members.size() <= 20 && incoming().name is string && incoming().name.size() <= 100;
     }
 
-    match /community_analytics/{reportId} {
-      allow list, get: if isNGOAdmin();
-      allow write: if false; // System-only
+    match /programs/{programId} {
+      allow list, get: if isSignedIn();
+      allow create, update: if isNgoAdmin();
+      allow delete: if isAdmin();
     }
 
-    match /surveys/{surveyId} {
-      allow read: if isSignedIn();
-      match /responses/{responseId} {
-        allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-        allow list, get: if isNGOAdmin();
-      }
+    match /rate_limits/{userId} {
+      allow get: if isOwner(userId);
+      // System writes via Admin SDK; client modifications forbidden.
     }
 
-    // --- 7. ADMIN BYPASS ---
-    match /admins/{adminId} {
-      allow read: if isSuperAdmin();
+    match /regional_stats/{region} {
+      allow get, list: if isNgoAdmin();
+      // System-only writes.
     }
   }
 }

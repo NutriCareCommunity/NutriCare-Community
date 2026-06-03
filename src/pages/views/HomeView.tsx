@@ -20,7 +20,15 @@ import {
   LayoutGrid,
   Apple,
   Smartphone,
-  X
+  X,
+  Mic,
+  MicOff,
+  AlertCircle,
+  RefreshCw,
+  Sparkles,
+  Loader2,
+  Activity,
+  Info
 } from "lucide-react";
 
 const getLocalizedStories = (lang: string) => {
@@ -318,6 +326,108 @@ export default function HomeView() {
 
   const [activeStory, setActiveStory] = useState<any | null>(null);
   const [activeStorySlide, setActiveStorySlide] = useState(0);
+  const [backlight, setBacklight] = useState(false);
+
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [isVoiceLogging, setIsVoiceLogging] = useState(false);
+  const [voiceLogResult, setVoiceLogResult] = useState<any | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recognitionRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = language === 'en' ? 'en-US' : language === 'hi' ? 'hi-IN' : 'te-IN';
+
+      rec.onstart = () => {
+        setIsListening(true);
+        setVoiceError(null);
+        setTranscript("");
+      };
+
+      rec.onresult = (event: any) => {
+        const resultText = event.results[0][0].transcript;
+        setTranscript(resultText);
+        handleProcessVoiceInput(resultText);
+      };
+
+      rec.onerror = (event: any) => {
+        console.error("Speech Recognition Error:", event.error);
+        if (event.error === 'not-allowed') {
+          setVoiceError("Microphone permission denied. Please allow microphone access.");
+        } else {
+          setVoiceError("No speech detected. Please speak closer to the mic!");
+        }
+        setIsListening(false);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = rec;
+    }
+  }, [language]);
+
+  const handleProcessVoiceInput = async (spokenText: string) => {
+    if (!spokenText.trim() || !user) return;
+    setIsVoiceLogging(true);
+    setVoiceLogResult(null);
+    setVoiceError(null);
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/gemini/voice-log", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ speechText: spokenText, language })
+      });
+
+      if (!response.ok) {
+        throw new Error("Voice companion parsing failed. Please try again.");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setVoiceLogResult(data);
+        await refreshProfile(); // reload reward points / streak
+      } else {
+        setVoiceError(data.error || "Failed to process voice log");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setVoiceError("Could not connect to voice server. Try again! ❤️");
+    } finally {
+      setIsVoiceLogging(false);
+    }
+  };
+
+  const startVoiceRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Error starting speech recognition", e);
+        try {
+          recognitionRef.current.stop();
+        } catch (_) {}
+        setTimeout(() => {
+          try {
+            recognitionRef.current.start();
+          } catch (_) {}
+        }, 300);
+      }
+    } else {
+      setVoiceError("STT is not supported on this browser context.");
+    }
+  };
 
   const addRewardPoints = async (pointsToAdd: number) => {
     if (!user) {
@@ -329,7 +439,10 @@ export default function HomeView() {
     const path = `users/${user.uid}`;
     try {
       const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, { points: increment(pointsToAdd) }, { merge: true });
+      await setDoc(userRef, { 
+        points: increment(pointsToAdd),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
       await refreshProfile();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, path);
@@ -466,6 +579,246 @@ export default function HomeView() {
         </motion.div>
       </section>
 
+      {/* Dynamic Voice Companion Portal */}
+      <section className="bg-[#131B2A] rounded-[48px] p-8 border border-slate-800 shadow-2xl relative overflow-hidden space-y-6">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <span className="px-3 py-1 bg-gradient-to-r from-red-500 to-amber-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest">
+              Live Web Speech API
+            </span>
+            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-2 mt-2">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              Asha Voice Companion <span className="text-slate-400 font-normal text-xs">(Swasthya Vani)</span>
+            </h3>
+            <p className="text-slate-400 text-xs font-bold leading-relaxed">
+              Speak to log your daily meals or report symptoms instantly in English, Hindi, or Telugu.
+            </p>
+          </div>
+          <div className="w-12 h-12 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center text-xl shadow-xl">🎙️</div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+          {/* Interactive Mic Controller */}
+          <div className="md:col-span-4 flex flex-col items-center justify-center p-6 bg-slate-950 border border-slate-850 rounded-[40px] relative overflow-hidden">
+            <div className="absolute inset-0 bg-indigo-500/5 mix-blend-color-dodge hover:opacity-100 opacity-60 transition-opacity" />
+            
+            {/* Pulsing Visualizer Effect when active */}
+            {isListening && (
+              <div className="absolute w-36 h-36 bg-red-500/20 rounded-full animate-ping pointer-events-none" />
+            )}
+            
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={startVoiceRecording}
+              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all relative z-10 ${
+                isListening 
+                  ? "bg-red-500 text-white shadow-lg shadow-red-500/40 animate-pulse" 
+                  : isVoiceLogging 
+                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/40"
+                  : "bg-slate-800 border-2 border-slate-700 hover:border-indigo-400 text-slate-300 hover:text-indigo-300"
+              }`}
+            >
+              {isListening ? (
+                <Mic className="w-10 h-10" />
+              ) : isVoiceLogging ? (
+                <Loader2 className="w-10 h-10 animate-spin" />
+              ) : (
+                <Mic className="w-10 h-10" />
+              )}
+            </motion.button>
+            
+            <span className={`text-[10px] font-black uppercase tracking-widest mt-4 text-center ${isListening ? "text-red-400 animate-pulse" : "text-slate-450"}`}>
+              {isListening ? "Listening... Speak Now" : isVoiceLogging ? "Parsing Voice Log..." : "Tap to Speak"}
+            </span>
+
+            {/* Quick Suggestions Helper */}
+            <div className="mt-6 w-full space-y-2 border-t border-slate-900 pt-4">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block text-center">Try saying these:</span>
+              <button 
+                onClick={() => handleProcessVoiceInput(language === 'hi' ? "मैंने आज दोपहर राजमा चावल खाया" : language === 'te' ? "నేను ఈ రోజు రెండు ఇడ్లీలు మిల్క్ తాగాను" : "I ate 2 chappatis and mixed beans curry")}
+                className="w-full text-[10px] bg-slate-900 border border-slate-850 hover:border-slate-750 text-slate-400 hover:text-white px-3 py-2 rounded-xl text-left transition-colors truncate"
+              >
+                🍽️ {language === 'hi' ? '"मैंने राजमा चावल खाया..."' : language === 'te' ? '"నేను రెండు ఇడ్లీలు..."' : '"I ate chappatis..."'}
+              </button>
+              <button 
+                onClick={() => handleProcessVoiceInput(language === 'hi' ? "मुझे पिछले दो दिनों से सिरदर्द और बुखार है" : language === 'te' ? "నాకు జ్వరం ఉంది ఇంకా ఒళ్లు నొప్పులుగా ఉంది" : "I have severe body pain, fever and dry throat")}
+                className="w-full text-[10px] bg-slate-900 border border-slate-850 hover:border-slate-750 text-slate-400 hover:text-white px-3 py-2 rounded-xl text-left transition-colors truncate"
+              >
+                🤒 {language === 'hi' ? '"मुझे बुखार है..."' : language === 'te' ? '"నాకు జ్వరం ఉంది..."' : '"I have body pain..."'}
+              </button>
+            </div>
+          </div>
+
+          {/* Result Showcase Card */}
+          <div className="md:col-span-8 h-full flex flex-col justify-center">
+            <AnimatePresence mode="wait">
+              {isListening && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="p-6 bg-slate-950/40 border border-slate-850 rounded-[32px] flex items-center justify-center min-h-[220px]"
+                >
+                  <p className="text-slate-400 italic font-medium text-sm text-center animate-pulse px-6">
+                    "Listening to your voice... Swasthya Vani is online!" 🌟 Please speak clearly.
+                  </p>
+                </motion.div>
+              )}
+
+              {isVoiceLogging && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="p-6 bg-slate-950/40 border border-slate-850 rounded-[32px] flex flex-col items-center justify-center gap-4 min-h-[220px]"
+                >
+                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                  <p className="text-slate-405 font-bold text-xs uppercase tracking-widest text-center">
+                    AI Companion is extracting health metrics...
+                  </p>
+                </motion.div>
+              )}
+
+              {voiceError && !isListening && !isVoiceLogging && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-6 bg-rose-950/20 border border-rose-900/30 rounded-[32px] flex items-center gap-4 min-h-[220px]"
+                >
+                  <AlertCircle className="w-8 h-8 text-rose-400 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-rose-300 text-sm">Issue with voice capturing:</h4>
+                    <p className="text-rose-450 text-xs mt-1">{voiceError}</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {voiceLogResult && !isListening && !isVoiceLogging && !voiceError && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-6 bg-slate-950 border border-slate-850 rounded-[32px] space-y-4"
+                >
+                  <div className="flex items-center gap-3 border-b border-slate-900 pb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Captured Script:</span>
+                    <span className="text-slate-400 italic text-xs truncate max-w-xs">"{voiceLogResult.parsedText}"</span>
+                  </div>
+
+                  {voiceLogResult.category === "meal" && voiceLogResult.mealDetails && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                            <Apple className="w-5 h-5 text-emerald-400" />
+                            {voiceLogResult.mealDetails.foodName}
+                          </h4>
+                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">✓ Logged to habits</p>
+                        </div>
+                        <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                          +15pts Reward
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 bg-[#131B2A] rounded-2xl border border-slate-800 text-center">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Calories</p>
+                          <p className="text-lg font-black text-indigo-300 mt-1">{voiceLogResult.mealDetails.calories || 250}kcal</p>
+                        </div>
+                        <div className="p-3 bg-[#131B2A] rounded-2xl border border-slate-800 text-center">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Protein</p>
+                          <p className="text-lg font-black text-emerald-300 mt-1">{voiceLogResult.mealDetails.protein || 8}g</p>
+                        </div>
+                        <div className="p-3 bg-[#131B2A] rounded-2xl border border-slate-800 text-center">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Iron</p>
+                          <p className="text-lg font-black text-orange-300 mt-1">{voiceLogResult.mealDetails.iron || 1.2}mg</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-800 flex items-start gap-3">
+                        <Info className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-slate-300 text-xs font-medium leading-relaxed">
+                          <span className="text-slate-500 font-black uppercase text-[9px] block mb-1">Caring companion advice:</span>
+                          {voiceLogResult.mealDetails.nutritionSummary || "A healthy meal with local ingredients supporting your family's overall energy!"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {voiceLogResult.category === "symptom" && voiceLogResult.symptomDetails && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-rose-400" />
+                            Symptom Encounter
+                          </h4>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {voiceLogResult.symptomDetails.detectedSymptoms.map((sym: string, i: number) => (
+                              <span key={i} className="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-300 text-[10px] font-black rounded-lg uppercase tracking-wider">{sym}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                          voiceLogResult.symptomDetails.severity === 'high' 
+                            ? 'bg-rose-500 text-white animate-pulse' 
+                            : voiceLogResult.symptomDetails.severity === 'medium'
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-indigo-500 text-white'
+                        }`}>
+                          {voiceLogResult.symptomDetails.severity} severity
+                        </span>
+                      </div>
+
+                      <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">🚨 Asha Health Alert & Remedies:</p>
+                        <p className="text-slate-300 text-xs leading-relaxed font-semibold">{voiceLogResult.symptomDetails.carativeAdvice}</p>
+                      </div>
+
+                      {voiceLogResult.symptomDetails.regionalAlert && (
+                        <div className="p-4 bg-rose-950/20 border border-rose-950/40 rounded-2xl flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <div className="text-rose-300 text-xs font-bold leading-relaxed">
+                              <span className="text-rose-450 font-black uppercase text-[9px] block mb-1">CRITICAL REGIONAL ADVICE:</span>
+                              {voiceLogResult.symptomDetails.regionalAlert}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {voiceLogResult.category === "unclear" && (
+                    <div className="space-y-3 p-6 text-center">
+                      <p className="text-slate-200 font-bold text-sm">We couldn't clearly map your voice log as a meal or a symptom. 🥺</p>
+                      <p className="text-slate-500 text-xs">Please speak clearly or mention key terms like: 'I ate...', 'I drank...', 'feeling sick', 'fever', or 'vomiting' so we can guide you perfectly.</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {!isListening && !isVoiceLogging && !voiceLogResult && !voiceError && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-8 bg-slate-950/45 border border-slate-850 rounded-[40px] flex flex-col items-center justify-center text-center space-y-4 h-full min-h-[220px]"
+                >
+                  <div className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center text-slate-400">
+                    <Mic className="w-8 h-8 opacity-75 animate-bounce" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-black text-white text-sm">Voice Companion is Ready</h4>
+                    <p className="text-slate-400 text-xs max-w-sm leading-relaxed px-4">
+                      Press the microphone button on the left and speak naturally. Your meal logs and child health alerts are parsed intelligently using Gemini AI.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </section>
+
       {/* Quick Action Grid */}
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="col-span-full flex items-center justify-between px-2">
@@ -515,15 +868,26 @@ export default function HomeView() {
             onClick={() => { setActiveTab('trackers'); setActiveTrackerModule('family'); }}
             className="bg-[#131B2A] rounded-[48px] p-8 md:p-12 text-slate-100 shadow-3xl border border-slate-800 relative overflow-hidden h-full cursor-pointer hover:scale-[1.01] transition-all"
         >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl" />
+            {backlight && (
+                <div 
+                    id="family-backlight-glow"
+                    className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" 
+                />
+            )}
             <div className="flex justify-between items-center mb-10">
                 <div>
                     <h3 className="text-2xl font-black tracking-tight text-white">{t.trackers.familyLoopTitle || "Family Health Loop"}</h3>
                     <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">{t.home.protectingMembers || "Protecting 3 Members"}</p>
                 </div>
-                <motion.div whileTap={{ scale: 0.9 }} className="w-12 h-12 bg-slate-800 border-2 border-slate-700/60 rounded-2xl flex items-center justify-center">
-                    <ChevronRight className="w-6 h-6 text-white" />
-                </motion.div>
+                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                    <motion.div 
+                        whileTap={{ scale: 0.9 }} 
+                        onClick={() => { setActiveTab('trackers'); setActiveTrackerModule('family'); }}
+                        className="w-12 h-12 bg-slate-800 border-2 border-slate-700/60 rounded-2xl flex items-center justify-center cursor-pointer"
+                    >
+                        <ChevronRight className="w-6 h-6 text-white" />
+                    </motion.div>
+                </div>
             </div>
             
             <div className="space-y-6">

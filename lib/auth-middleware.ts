@@ -35,13 +35,13 @@ export async function authMiddleware(
         const userRef = adminDb.collection("users").doc(decodedToken.uid);
         const userDoc = await userRef.get();
         if (userDoc.exists) {
-          role = userDoc.data()?.role || "Community Member";
+          role = userDoc.data()?.role || "user";
         } else {
-          role = "Community Member";
+          role = "user";
         }
       } catch (dbErr) {
-        console.error("Failed to fetch user role from db, defaulting to Community Member:", dbErr);
-        role = "Community Member";
+        console.error("Failed to fetch user role from db, defaulting to user:", dbErr);
+        role = "user";
       }
     }
 

@@ -1,4 +1,4 @@
-import { db } from "../lib/firebase";
+import { db, auth } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, limit } from "firebase/firestore";
 
 export interface FoodAnalysis {
@@ -12,6 +12,14 @@ export interface FoodAnalysis {
   isRuralFriendly: boolean;
 }
 
+const getHeaders = async () => {
+  const token = await auth.currentUser?.getIdToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+  };
+};
+
 export class GeminiAIBackend {
   /**
    * AI Food Detection Pipeline - CLIENT PROXY
@@ -19,9 +27,10 @@ export class GeminiAIBackend {
    */
   static async analyzeIndianFood(base64Image: string, userId: string): Promise<FoodAnalysis> {
     try {
+      const headers = await getHeaders();
       const response = await fetch("/api/gemini/analyze-food", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ base64Image }),
       });
 
@@ -60,9 +69,10 @@ export class GeminiAIBackend {
       const history = snap.docs.map(d => d.data());
 
       // 2. Request synthesized advice securely from backend
+      const headers = await getHeaders();
       const response = await fetch("/api/gemini/health-advisor", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ history, language }),
       });
 

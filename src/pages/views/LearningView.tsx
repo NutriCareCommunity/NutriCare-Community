@@ -3,7 +3,7 @@ import { useApp } from "../../context/AppContext";
 import { translations } from "../../constants/translations";
 import { motion, AnimatePresence } from "framer-motion";
 import { db, handleFirestoreError, OperationType } from "../../lib/firebase";
-import { doc, setDoc, increment } from "firebase/firestore";
+import { doc, setDoc, increment, serverTimestamp } from "firebase/firestore";
 import { 
   Search, 
   BookOpen, 
@@ -213,7 +213,8 @@ export default function LearningView() {
         try {
             const userRef = doc(db, "users", user.uid);
             await setDoc(userRef, {
-                points: increment(pointsToAdd)
+                points: increment(pointsToAdd),
+                updatedAt: serverTimestamp()
             }, { merge: true });
             await refreshProfile();
         } catch (err) {

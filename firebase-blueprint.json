@@ -5,17 +5,114 @@
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "displayName": { "type": "string" },
         "email": { "type": "string" },
-        "language": { "type": "string", "enum": ["en", "te", "hi", "ta", "kn"] },
-        "role": { "type": "string", "enum": ["user", "parent", "health_worker", "ngo_admin", "gov_admin", "super_admin"], "description": "Primary role selected during onboarding to tailor experience (user, parent, health_worker)." },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "parent", "health_worker", "ngo_admin", "admin"] },
         "ageGroup": { "type": "string", "enum": ["child", "teen", "adult", "elderly", "pregnant"] },
+        "language": { "type": "string", "enum": ["en", "te", "hi", "ta", "kn"] },
+        "region": { "type": "string" },
         "familyId": { "type": "string" },
         "points": { "type": "integer" },
+        "nutriScore": { "type": "integer" },
         "onboarded": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "language", "onboarded", "role"]
+    },
+    "HabitLog": {
+      "title": "Health Habit Log",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["water", "meal", "exercise", "junk"] },
+        "value": { "type": "number" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "value", "timestamp"]
+    },
+    "GrowthRecord": {
+      "title": "Pediatric/Elderly Growth Tracking",
+      "type": "object",
+      "properties": {
+        "height": { "type": "number" },
+        "weight": { "type": "number" },
+        "muac": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["timestamp"]
+    },
+    "Device": {
+      "title": "Connected Health Device",
+      "type": "object",
+      "properties": {
+        "deviceName": { "type": "string" },
+        "deviceType": { "type": "string", "enum": ["Watch", "Scale", "BP Monitor", "Glucose Meter"] },
+        "status": { "type": "string", "enum": ["connected", "disconnected", "syncing"] },
+        "batteryLevel": { "type": "number" },
+        "lastSync": { "type": "string", "format": "date-time" }
+      },
+      "required": ["deviceName", "deviceType", "status"]
+    },
+    "AIRecommendation": {
+      "title": "AI Clinical Insight",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string", "enum": ["nutrition", "activity", "medical_alert", "tip"] },
+        "content": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["category", "content", "isRead", "timestamp"]
+    },
+    "NutritionLog": {
+      "title": "Nutrition Log",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "foods": { "type": "array", "items": { "type": "string" } },
+        "calories": { "type": "number" },
+        "nutrients": { "type": "object" },
+        "mealType": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+        "loggedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "foods", "calories", "mealType", "loggedBy", "createdAt"]
+    },
+    "Post": {
+      "title": "Community Post",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "likesCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "authorId", "authorName", "authorRole", "likesCount", "createdAt"]
+    },
+    "Like": {
+      "title": "Like relationship",
+      "type": "object",
+      "properties": {
+        "likedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["likedAt"]
+    },
+    "Comment": {
+      "title": "Post Comment",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "authorName", "text", "createdAt"]
     },
     "Family": {
       "title": "Family Circle",
@@ -24,118 +121,98 @@
         "adminId": { "type": "string" },
         "members": { "type": "array", "items": { "type": "string" } },
         "name": { "type": "string" },
-        "villageName": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["adminId", "members"]
+      "required": ["adminId", "members", "name", "createdAt"]
     },
-    "HabitLog": {
-      "title": "Health Habit Log",
+    "Program": {
+      "title": "NGO Program",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["water", "meal", "exercise", "junk"] },
-        "value": { "type": "number" },
+        "name": { "type": "string" },
         "description": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "targetRegion": { "type": "string" },
+        "goals": { "type": "array", "items": { "type": "string" } },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "type", "value", "timestamp"]
+      "required": ["name", "description", "targetRegion", "goals", "createdBy", "createdAt"]
     },
-    "GrowthRecord": {
-      "title": "Pediatric/Elderly Growth Tracking",
+    "RateLimit": {
+      "title": "Rate Limit Information",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "height": { "type": "number" },
-        "weight": { "type": "number" },
-        "muac": { "type": "number", "description": "Mid-Upper Arm Circumference for malnutrition check" },
-        "headCircumference": { "type": "number" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "count": { "type": "integer" },
+        "resetTime": { "type": "integer" }
       },
-      "required": ["userId", "timestamp"]
+      "required": ["count", "resetTime"]
     },
-    "AIRecommendation": {
-      "title": "AI Clinical Insight",
+    "RegionalStats": {
+      "title": "Aggregated Regional Analytics",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "category": { "type": "string", "enum": ["nutrition", "activity", "medical_alert", "tip"] },
-        "content": { "type": "string" },
-        "isRead": { "type": "boolean" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "avgCalories": { "type": "number" },
+        "avgProtein": { "type": "number" },
+        "avgIron": { "type": "number" },
+        "userCount": { "type": "integer" },
+        "logCount": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "content", "category"]
-    },
-    "CommunityReport": {
-      "title": "Regional Health Analytics",
-      "type": "object",
-      "properties": {
-        "district": { "type": "string" },
-        "malnutritionCount": { "type": "number" },
-        "prevalentCondition": { "type": "string" },
-        "avgWaterIntake": { "type": "number" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["district", "timestamp"]
-    },
-    "Device": {
-      "title": "Connected Health Device",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "deviceName": { "type": "string" },
-        "deviceType": { "type": "string", "enum": ["Watch", "Scale", "BP Monitor", "Glucose Meter"] },
-        "status": { "type": "string", "enum": ["connected", "disconnected", "syncing"] },
-        "lastSync": { "type": "string", "format": "date-time" },
-        "batteryLevel": { "type": "number" }
-      },
-      "required": ["userId", "deviceName", "deviceType", "status"]
-    },
-    "SurveyResponse": {
-      "title": "Community Survey Response",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "surveyId": { "type": "string" },
-        "answers": { "type": "object" },
-        "location": { "type": "object" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "surveyId", "answers", "timestamp"]
+      "required": ["avgCalories", "avgProtein", "avgIron", "userCount", "logCount", "updatedAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "Enterprise user profiles with RBAC."
-    },
-    "/families/{familyId}": {
-      "schema": "Family",
-      "description": "Relational family clusters."
+      "description": "User profiles with strict access rules."
     },
     "/users/{userId}/habits/{habitId}": {
       "schema": "HabitLog",
-      "description": "Live health tracking."
+      "description": "Daily habit tracking logs."
     },
     "/users/{userId}/growth/{recordId}": {
       "schema": "GrowthRecord",
-      "description": "Detailed development tracking for children/elderly."
+      "description": "Height, weight, and development details for kids and elderly."
     },
     "/users/{userId}/devices/{deviceId}": {
       "schema": "Device",
-      "description": "Linked hardware for automated tracking."
+      "description": "Connected smart devices."
     },
     "/users/{userId}/ai_insights/{insightId}": {
       "schema": "AIRecommendation",
-      "description": "Client-side feed of backend AI processing."
+      "description": "Nutritional recommendations generated by Gemini."
     },
-    "/community_analytics/{reportId}": {
-      "schema": "CommunityReport",
-      "description": "Aggregated data for NGO/Gov stakeholders."
+    "/nutrition_logs/{logId}": {
+      "schema": "NutritionLog",
+      "description": "Detailed foods logged for meal and nutrition metrics."
     },
-    "/surveys/{surveyId}/responses/{responseId}": {
-      "schema": "SurveyResponse",
-      "description": "Bulk survey ingestion for rural health assessment."
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Community bulletin board posts."
+    },
+    "/posts/{postId}/likes/{userId}": {
+      "schema": "Like",
+      "description": "Sub-document for tracking atomic likes."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments left on community posts."
+    },
+    "/families/{familyId}": {
+      "schema": "Family",
+      "description": "Parent-defined family groups."
+    },
+    "/programs/{programId}": {
+      "schema": "Program",
+      "description": "NGO-created community health programs."
+    },
+    "/rate_limits/{userId}": {
+      "schema": "RateLimit",
+      "description": "Firestore-backed chat rate limiting."
+    },
+    "/regional_stats/{region}": {
+      "schema": "RegionalStats",
+      "description": "Pre-aggregated statistics for regional reporting."
     }
   }
 }
