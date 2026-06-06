@@ -10,6 +10,7 @@ import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import { motion, AnimatePresence } from "framer-motion";
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function AppContent() {
   const { user, profile, loading, language } = useApp();
@@ -46,6 +47,7 @@ export default function App() {
     <AppProvider>
       <div className="min-h-screen bg-[#0B0F19] text-slate-100 font-sans selection:bg-emerald-800 selection:text-white">
         <AppContent />
+        <SpeedInsights />
       </div>
     </AppProvider>
   );
